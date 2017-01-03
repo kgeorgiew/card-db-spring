@@ -1,3 +1,1 @@
-# CRUD backend for a generic card application with spring boot
-
-
+# CRUD backend for a card game application with spring boot
