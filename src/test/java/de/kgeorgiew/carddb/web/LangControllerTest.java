@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -22,16 +23,13 @@ import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.Locale;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -44,36 +42,55 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *         Then we could test everything expected the json deserialization and json response.
  *
  *         Create tests:
- *         PUT reqeuest to /api/v1/lang/ with wrong content-type returns a empty 415 (Unsupported Media Type) response
+ *         POST to /api/v1/lang/ with wrong content-type text/plain returns
+ *         a empty 415 (Unsupported Media Type) response
  *
- *         PUT request to /api/v1/lang/ with json data { lang: 'EN' } returns a 400 json response with data
- *         { errors: [{ field: 'lang', message: 'length must be exact 3' }] }
+ *         POST { lang: "EN" } to /api/v1/lang/ returns a 400 json response with data
+ *         { "message": "Validation error", errors: [{ field: "lang", "message:" "length must be exact 3" }] }
  *
- *         PUT request to /api/v1/lang/ with json data { lang: 'ENGL' } returns a 400 json response with data
- *         { errors: [{ field: 'lang', message: 'length must be exact 3' }] }
+ *         POST { lang: "ENGL" } to /api/v1/lang/ returns a 400 json response with data
+ *         { "message": "Vallidation error", errors: [{ field: "lang", "message:" "length must be exact 3" }] }
  *
- *         PUT request to /api/v1/lang/ with json data { lang: '' } returns a 400 json response with data
- *         { errors: [{ field: 'lang', message: 'may not be null' }] }
+ *         POST {} to /api/v1/lang/ returns a 400 json response with data
+ *         { "message": "Vallidation error", errors: [{ field: "lang", "message:" "may not be null" }] }
  *
- *         PUT request to /api/v1/lang/ with json data {} returns a 400 json response with data
- *         { errors: [{ field: 'lang', message: 'may not be null' }] }
+ *         POST empty request to /api/v1/lang/ returns a 400 json response with data
+ *         { "message:" "Invalid request content" }
  *
- *         PUT request to /api/v1/lang/ without json data returns a 400 json response with data
- *         { errors: [{ 'Invalid request content' }] }
+ *         POST empty request to /api/v1/lang/ with Accept-Language: de returns a 400 json response with data
+ *         { "message:" "Ungültige Anfrage }
  *
- *         Put request to /api/v1/lang/ with json data { lang: 'ENG' } returns a 200 json response with data
- *         { lang: 'ENG', created: '2017-01-05T08:55:17.216Z', createdby: 'tester'}
+ *         POST { lang: "ENG" } to /api/v1/lang/ returns a 200 json response with data
+ *         { lang: "ENG", created: "2017-01-05T08:55:17.216Z", createdby: "tester"}
  *
- *         Multiple put request to /api/v1/lang/ with json data { lang: 'ENG' } returns on the second request
- *         a 400 json response with data { errors: [{ field: 'lang', message: 'Entry already exists.' }] }
+ *         Successful POST request should return { ..., "_links": { "self": { href: "/api/v1/lang/1" } } }
  *
- *         PUT request to /api/v1/lang/ with json data { lang: 'ENG', notFoundField: 'ENG' } returns a 200 json response
- *         with data  { lang: 'ENG', created: '2017-01-05T08:55:17.216Z', createdby: 'tester'}
+ *         POST { lang: "ENG", unexpectedField: "unexpected" } to /api/v1/lang/ returns a 200 json response
+ *         with data  { lang: "ENG", created: "2017-01-05T08:55:17.216Z", createdby: "tester"}
+ *
+ *         POST { lang: "ENG" } multiple times to /api/v1/lang/ returns a 400 json response with data
+ *         { "message:" "Entry already exists." }
+ *
+ *
+ *         Delete tests:
+ *         DELETE to /api/v1/lang/1 returns a 200 empty response without data
+ *
+ *         DELETE to /api/va/lang/2 returns a 404 json response with data
+ *         { "message": "Not found" }
+ *
+ *         DELETE to /api/v1/lang/1 with content-type 'text/plain' returns a 200 empty response
+ *
+ *
+ *         Put/Update tests:
+ *
+ *
+ *
+ *
  */
 
 @RunWith(SpringRunner.class)
 @WebMvcTest(LangController.class)
-@ActiveProfiles({"test", "cdi"})
+@ActiveProfiles({"test"})
 public class LangControllerTest {
 
     @MockBean
@@ -90,21 +107,18 @@ public class LangControllerTest {
 
     private String baseUrl = "/api/v1/lang/";
     private String requiredField = "lang";
-    private LocalDateTime fixedDateTime;
+    private ZonedDateTime fixedDateTime;
 
     @Before
     public void setUp() {
         Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
         SystemTimeService fixedTimeService = new SystemTimeService(fixedClock);
-        fixedDateTime = fixedTimeService.asLocalDateTime();
-
-        //TODO Need to test multiple languages
+        fixedDateTime = fixedTimeService.asZonedDateTime();
     }
-
 
     @Test
     public void createWithWrongContentTypeShouldFail() throws Exception {
-        RequestBuilder request = put(baseUrl).contentType(MediaType.TEXT_PLAIN_VALUE);
+        RequestBuilder request = post(baseUrl).contentType(MediaType.TEXT_PLAIN_VALUE);
 
         String expectedContent = "";
         mockMvc.perform(request)
@@ -116,58 +130,98 @@ public class LangControllerTest {
     public void createWithShortFieldValueShouldFail() throws Exception {
         String content = "{ \"lang\": \"\"}";
 
-        MockHttpServletRequestBuilder request = getJsonRequest(HttpMethod.PUT).content(content);
-        expectError(request, "length must be exact 3")
+        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
+
+        assertExpectedError(request, "Validation error")
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.errors[0].field", equalTo(requiredField)));
+                .andExpect(jsonPath("$.errors[0].field",
+                        equalTo(requiredField)))
+                .andExpect(jsonPath("$.errors[0].message",
+                        equalTo("length must be exact 3")));
     }
 
     @Test
     public void createWithLongFieldValueShouldFail() throws Exception {
         String content = "{ \"lang\": \"ENGL\"}";
 
-        MockHttpServletRequestBuilder request = getJsonRequest(HttpMethod.PUT).content(content);
-        expectError(request, "length must be exact 3")
+        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
+
+        assertExpectedError(request, "Validation error")
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.errors[0].field", equalTo(requiredField)));
+                .andExpect(jsonPath("$.errors[0].field",
+                        equalTo(requiredField)))
+                .andExpect(jsonPath("$.errors[0].message",
+                        equalTo("length must be exact 3")));
     }
 
     @Test
     public void createWithEmptyJsonShouldFail() throws Exception {
         String content = "{}";
 
-        MockHttpServletRequestBuilder request = getJsonRequest(HttpMethod.PUT).content(content);
-        expectError(request, "may not be null")
-                .andExpect(status().isUnprocessableEntity());
+        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
+
+        assertExpectedError(request, "Validation error")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errors[0].message",
+                        equalTo("may not be null")))
+                .andExpect(jsonPath("$.errors[0].field",
+                        equalTo(requiredField)));
+
     }
+
 
     @Test
     public void createWithInvalidJsonShouldFail() throws Exception {
         String content = "";
         String expectedMsg = messageSource.getMessage("error.request.body.invalid", null, Locale.getDefault());
 
-        MockHttpServletRequestBuilder request = getJsonRequest(HttpMethod.PUT).content(content);
-        expectError(request, expectedMsg)
+        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
+
+        assertExpectedError(request, expectedMsg)
                 .andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    public void shouldReturnGermanErrorMessage() throws Exception {
+        Locale expectedLocal = Locale.GERMAN;
+        String content = "";
+        String expectedMsg = messageSource.getMessage("error.request.body.invalid",
+                null, expectedLocal);
+
+        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST)
+                .locale(expectedLocal)
+                .content(content);
+
+        assertExpectedError(request, expectedMsg)
+                .andExpect(status().isBadRequest());
+
     }
 
     @Test
     public void createShouldReturnJsonWithCreatedFields() throws Exception {
-        String content = "{ \"lang\": \"ENG\" }";
-
         Lang expectedResult = new Lang("ENG", "tester", fixedDateTime);
-
         Lang lang = new Lang("ENG", null, null);
+
         given(langRepository.create(lang)).willReturn(expectedResult);
 
-        MockHttpServletRequestBuilder request = getJsonRequest(HttpMethod.PUT).content(content);
+        String content = "{ \"lang\": \"ENG\", \"unexpectedField\": \"unexpected\" }";
 
+        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
+
+        String expecedCreated = getAsString(expectedResult.getCreated());
         mockMvc.perform(request)
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.lang", equalTo(expectedResult.getLang())))
             .andExpect(jsonPath("$.createdBy", equalTo(expectedResult.getCreatedBy())))
-            .andExpect(jsonPath("$.created", equalTo(getAsString(expectedResult.getCreated()))));
+            .andExpect(jsonPath("$.created", equalTo(expecedCreated)))
+
+            // Expected links
+//            .andExpect(jsonPath("$._links.profile").exists())
+            .andExpect(jsonPath("$._links.self.href").isString())
+            .andExpect(jsonPath("$._links.delete.href").isString())
+            .andExpect(jsonPath("$._links.update.href").isString());
 
         verify(langRepository).create(lang);
     }
@@ -181,33 +235,35 @@ public class LangControllerTest {
 
         String expectedMsg = messageSource.getMessage("error.entity.duplicateEntry", null, Locale.getDefault());
 
-        MockHttpServletRequestBuilder request = getJsonRequest(HttpMethod.PUT).content(content);
+        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
 
-        expectError(request, expectedMsg)
-                .andExpect(status().isConflict());
+        assertExpectedError(request, expectedMsg)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errors").doesNotExist());
 
         verify(langRepository).create(lang);
 
     }
 
-    private MockHttpServletRequestBuilder getJsonRequest(HttpMethod method) throws Exception {
+    private MockHttpServletRequestBuilder jsonRequest(HttpMethod method) throws Exception {
         Object urlParams = null;
         MockHttpServletRequestBuilder request = request(method, baseUrl, urlParams)
-                .accept(MediaType.APPLICATION_JSON_UTF8)
-                .contentType(MediaType.APPLICATION_JSON_UTF8);
+                .accept(MediaTypes.HAL_JSON_VALUE, "application/alps+json")
+                .characterEncoding("utf-8")
+                .contentType(MediaType.APPLICATION_JSON);
 
         return request;
     }
 
-    private ResultActions expectError(MockHttpServletRequestBuilder request, String expectedMsg) throws Exception {
+    private ResultActions assertExpectedError(MockHttpServletRequestBuilder request, String expectedMsg) throws Exception {
         return mockMvc.perform(request)
                 .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.errors", hasSize(1)))
-                .andExpect(jsonPath("$.errors[0].message", equalTo(expectedMsg)));
+                .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON))
+                .andExpect(jsonPath("$.message", equalTo(expectedMsg)));
     }
 
-    private String getAsString(LocalDateTime localDateTime) throws JsonProcessingException {
-        return objectMapper.writeValueAsString(localDateTime).replaceAll("\"", "");
+    private String getAsString(ZonedDateTime dateTime) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(dateTime).replaceAll("\"", "");
     }
 
 }

@@ -1,0 +1,17 @@
+spring:
+# Database Configuration
+    datasource:
+        driverClassName: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost/carddbspring?useSSL=false
+        username: ${CARDDB_USERNAME}
+        password: ${CARDDB_PASSWORD}
+# jOOQ Configuration
+    jooq:
+        sqlDialect: MYSQL
+        database:
+            type: org.jooq.util.mysql.MySQLDatabase
+            schema: carddbspring
+
+    jackson:
+        serialization:
+              writeDatesAsTimestamps: false

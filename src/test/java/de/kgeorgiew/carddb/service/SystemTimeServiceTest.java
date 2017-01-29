@@ -3,6 +3,7 @@ package de.kgeorgiew.carddb.service;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -15,11 +16,11 @@ import static org.junit.Assert.assertTrue;
  * @author kgeorgiew
  */
 @RunWith(JUnit4.class)
+@ActiveProfiles({"test"})
 public class SystemTimeServiceTest {
 
-
     @Test
-    public void returnsSystemTime() throws Exception {
+    public void shouldReturnSystemTime() throws Exception {
         Clock systemClock = Clock.systemDefaultZone();
 
         long timeBefore = systemClock.millis();
@@ -35,7 +36,7 @@ public class SystemTimeServiceTest {
     }
 
     @Test
-    public void returnsFakedTimeInMilliseconds() throws Exception {
+    public void shouldReturnFakedTimeInMilliseconds() throws Exception {
         Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
         long fakeTime = fixedClock.millis();
 

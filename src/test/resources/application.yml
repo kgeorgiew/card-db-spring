@@ -1,0 +1,22 @@
+spring:
+    application:
+        name: carddb
+# Database Configuration
+    datasource:
+        driverClassName: org.h2.Driver
+        url: jdbc:h2:./tmp/test
+        username: sa
+        password:
+        initialize: false
+        continueOnError: true
+# jOOQ Configuration
+    jooq:
+        sqlDialect: H2
+        database:
+            type: org.jooq.util.h2.H2Database
+            schema: PUBLIC
+    jackson:
+        serialization:
+              write-dates-as-timestamps: false
+server:
+    port: 9500

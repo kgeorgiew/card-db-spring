@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 /**
  * @author kgeorgiew
@@ -30,6 +31,10 @@ public class SystemTimeService {
 
     public LocalDateTime asLocalDateTime() {
         return LocalDateTime.ofInstant(asInstant(), clock.getZone());
+    }
+
+    public ZonedDateTime asZonedDateTime() {
+        return ZonedDateTime.now(clock); //asLocalDateTime(), clock.getZone());
     }
 
 }

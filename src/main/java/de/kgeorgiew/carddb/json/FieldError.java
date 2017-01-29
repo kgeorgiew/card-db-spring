@@ -3,15 +3,15 @@ package de.kgeorgiew.carddb.json;
 /**
  * @author kgeorgiew
  */
-public class ValidationError implements ClientError {
+public class FieldError implements ClientMessage {
 
     private String field;
     private String message;
 
-    ValidationError() {
+    FieldError() {
     }
 
-    public ValidationError(String field, String message) {
+    public FieldError(String field, String message) {
         this.field = field;
         this.message = message;
     }
@@ -19,6 +19,7 @@ public class ValidationError implements ClientError {
     public String getField() {
         return field;
     }
+
 
     @Override
     public String getMessage() {

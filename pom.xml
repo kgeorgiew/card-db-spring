@@ -22,11 +22,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <org.jooq.version>3.9.0</org.jooq.version>
+        <org.jooq.version>3.9.1</org.jooq.version>
         <mysql.version>6.0.5</mysql.version>
         <h2.version>1.4.193</h2.version>
+        <jackson.version>2.8.6</jackson.version>
         <hikaricp.version>2.5.1</hikaricp.version>
         <junitparams.version>1.0.5</junitparams.version>
+        <springhateoas.version>0.23.0.RELEASE</springhateoas.version>
     </properties>
 
     <dependencies>
@@ -34,11 +36,14 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jdbc</artifactId>
+            <artifactId>spring-boot-starter-data-rest</artifactId>
         </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.springframework.boot</groupId>-->
+            <!--<artifactId>spring-boot-starter-hateoas</artifactId>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>org.jooq</groupId>
@@ -67,18 +72,22 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jdk8</artifactId>
-            <version>2.8.5</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.8.5</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!--
@@ -120,7 +129,7 @@
                                     </goals>
                                     <configuration>
                                         <files>
-                                            <file>src/test/resources/application.properties</file>
+                                            <file>src/test/resources/application.yml</file>
                                         </files>
                                     </configuration>
                                 </execution>

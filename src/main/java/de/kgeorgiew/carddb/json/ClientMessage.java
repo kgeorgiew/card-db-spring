@@ -3,7 +3,7 @@ package de.kgeorgiew.carddb.json;
 /**
  * @author kgeorgiew
  */
-public interface ClientError {
+public interface ClientMessage {
 
     String getMessage();
 }
