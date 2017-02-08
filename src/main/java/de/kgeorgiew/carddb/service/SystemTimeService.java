@@ -14,7 +14,7 @@ import java.time.ZonedDateTime;
 @Service
 public class SystemTimeService {
 
-    private Clock clock;
+    private final Clock clock;
 
     public SystemTimeService(Clock clock) {
         this.clock = clock;

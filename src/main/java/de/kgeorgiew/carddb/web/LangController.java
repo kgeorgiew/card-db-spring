@@ -25,8 +25,8 @@ import java.util.Optional;
 @ExposesResourceFor(Lang.class)
 public class LangController {
 
-    private LangRepository repository;
-    private LangResourceAssembler resourceAssembler;
+    private final LangRepository repository;
+    private final LangResourceAssembler resourceAssembler;
 
     public LangController(LangRepository repository, LangResourceAssembler resourceAssembler) {
         this.repository = repository;

@@ -28,8 +28,6 @@ public class AppConfig {
         return Clock.systemDefaultZone();
     }
 
-
-
     @Bean
     public CurieProvider curieProvider() {
         return new DefaultCurieProvider("ex", new UriTemplate("http://www.example.com/rels/{rel}"));

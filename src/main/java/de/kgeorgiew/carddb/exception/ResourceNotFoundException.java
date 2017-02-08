@@ -8,7 +8,6 @@ package de.kgeorgiew.carddb.exception;
  */
 public class ResourceNotFoundException extends RuntimeException {
 
-
     public ResourceNotFoundException() {
     }
 

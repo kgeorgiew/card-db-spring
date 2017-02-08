@@ -1,7 +1,6 @@
 package de.kgeorgiew.carddb.service;
 
 import de.kgeorgiew.carddb.domain.Lang;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityLinks;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Resource;
@@ -14,8 +13,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class LangResourceAssembler implements ResourceAssembler<Lang, Resource<Lang>> {
 
-    @Autowired
-    EntityLinks entityLinks;
+    private final EntityLinks entityLinks;
+
+    public LangResourceAssembler(EntityLinks entityLinks) {
+        this.entityLinks = entityLinks;
+    }
 
     @Override
     public Resource<Lang> toResource(Lang entity) {

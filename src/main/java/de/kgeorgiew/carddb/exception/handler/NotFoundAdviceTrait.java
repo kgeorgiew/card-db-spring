@@ -14,7 +14,6 @@ import javax.ws.rs.core.Response;
  */
 public interface NotFoundAdviceTrait extends AdviceTrait {
 
-
     @ExceptionHandler
     default ResponseEntity<Problem> handleNotFoundException(
             final ResourceNotFoundException exception,
