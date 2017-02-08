@@ -7,7 +7,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.*;
@@ -22,13 +21,11 @@ import static org.hamcrest.core.IsEqual.equalTo;
  * Serialize LocalDateTime should result in format yyyy-MM-dd'T'H:mm:ss.SSS
  * Deserialize '2017-01-10T15:08:46.948Z' should result in LocalDateTime 2017-01-10T16:08:46.948
  *
- *
  * @author kgeorgiew
  */
 @RunWith(SpringRunner.class)
 @JsonTest
-@ActiveProfiles({"test"})
-public class JsonConvertTest {
+public class JacksonDateTest {
 
     @Autowired
     private JacksonTester<ZonedDateTime> zonedDateTimeConverter;

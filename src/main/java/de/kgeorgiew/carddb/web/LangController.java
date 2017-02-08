@@ -15,6 +15,9 @@ import javax.validation.Valid;
 import java.util.Optional;
 
 /**
+ *
+ * Lang resource api endpoint
+ *
  * @author kgeorgiew
  */
 @RestController

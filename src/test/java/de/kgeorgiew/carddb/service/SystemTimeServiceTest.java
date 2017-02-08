@@ -3,7 +3,6 @@ package de.kgeorgiew.carddb.service;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -16,7 +15,6 @@ import static org.junit.Assert.assertTrue;
  * @author kgeorgiew
  */
 @RunWith(JUnit4.class)
-@ActiveProfiles({"test"})
 public class SystemTimeServiceTest {
 
     @Test

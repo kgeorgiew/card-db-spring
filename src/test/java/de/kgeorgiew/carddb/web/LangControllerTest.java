@@ -20,9 +20,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.hypermedia.LinksSnippet;
-import org.springframework.restdocs.mockmvc.RestDocumentationResultHandler;
 import org.springframework.restdocs.payload.ResponseFieldsSnippet;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
@@ -33,8 +31,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -53,11 +49,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * @author kgeorgiew
- *
  */
 @RunWith(SpringRunner.class)
 @WebMvcTest(LangController.class)
-@ActiveProfiles({"test"})
 @AutoConfigureRestDocs("target/generated-snippets/lang")
 public class LangControllerTest {
 
@@ -104,7 +98,8 @@ public class LangControllerTest {
         assert4xxError(request, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
     }
 
-    //TODO This is testing the spring behavior. It should be same for all controllers, so outsource this code?
+    // TODO This is testing the spring behavior.
+    // It should be same for all controllers, so outsource this code?
     @Test
     public void createWithInvalidJsonShouldFail() throws Exception {
         String content = "";
@@ -112,22 +107,6 @@ public class LangControllerTest {
         RequestBuilder request = jsonRequest(HttpMethod.POST, content);
 
         assert4xxError(request, HttpStatus.BAD_REQUEST);
-    }
-
-    //TODO This is testing the spring behavior. It should be same for all controllers, so outsource this code?
-    @Test
-    public void createShouldIgnoreUnknownFields() throws Exception {
-        Lang expectedResult = new Lang("ENG", "tester", fixedDateTime);
-        Lang lang = new Lang("ENG", null, null);
-
-        given(langRepository.create(lang)).willReturn(expectedResult);
-
-        String content = "{ \"lang\": \"ENG\", \"unknownField\": \"test\" }";
-
-        RequestBuilder request = jsonRequest(HttpMethod.POST, content);
-
-        assert20xWithEntry(request, HttpStatus.CREATED, expectedResult)
-                .andExpect(jsonPath("$.unknownField").doesNotExist());
     }
 
 //    @Test
@@ -172,16 +151,13 @@ public class LangControllerTest {
 
     @Test
     public void createShouldReturnJsonWithCreatedFields() throws Exception {
-        Lang expectedResult = new Lang("ENG", "tester", fixedDateTime);
-
+        String content = "{ \"lang\": \"ENG\" }";
         Lang lang = new Lang("ENG", null, null);
+        Lang expectedResult = new Lang("ENG", "tester", fixedDateTime);
 
         given(langRepository.create(lang)).willReturn(expectedResult);
 
-        Map<String, Object> content = new HashMap<>();
-        content.put("lang", "ENG");
-
-        RequestBuilder request = jsonRequest(HttpMethod.POST, objectMapper.writeValueAsString(content));
+        RequestBuilder request = jsonRequest(HttpMethod.POST, content);
 
         assert20xWithEntry(request, HttpStatus.CREATED, expectedResult)
                 .andDo(document("create",
@@ -197,11 +173,11 @@ public class LangControllerTest {
         verify(langRepository).create(lang);
     }
 
+    // TODO Should be test in the repository test
     @Test
     public void createShouldFailOnDuplicateEntry() throws Exception {
         String content = "{ \"lang\": \"ENG\" }";
         String expectedMsg = "Entry already exists";
-
         Lang lang = new Lang("ENG", null, null);
 
         given(langRepository.create(lang)).willThrow(new DuplicateKeyException(expectedMsg));
@@ -255,7 +231,6 @@ public class LangControllerTest {
                 .andExpect(jsonPath("$.detail", equalTo(expectedMessage)));
 
         verify(langRepository).get(inputLang);
-
     }
 
     private MockHttpServletRequestBuilder jsonRequest(HttpMethod method, String content) throws Exception {
