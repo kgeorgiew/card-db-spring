@@ -1,16 +1,21 @@
 package de.kgeorgiew.carddb.config;
 
-import de.kgeorgiew.carddb.domain.Lang;
-import de.kgeorgiew.carddb.web.LangController;
+import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.Resource;
-import org.springframework.hateoas.ResourceProcessor;
+import org.springframework.hateoas.UriTemplate;
+import org.springframework.hateoas.hal.CurieProvider;
+import org.springframework.hateoas.hal.DefaultCurieProvider;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.zalando.problem.ProblemModule;
+import org.zalando.problem.validation.ConstraintViolationProblemModule;
 
 import java.time.Clock;
-
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
 /**
  * @author kgeorgiew
@@ -24,21 +29,19 @@ public class AppConfig {
     }
 
 
+
     @Bean
-    public ResourceProcessor<Resource<Lang>> personProcessor() {
+    public CurieProvider curieProvider() {
+        return new DefaultCurieProvider("ex", new UriTemplate("http://www.example.com/rels/{rel}"));
+    }
 
-        return new ResourceProcessor<Resource<Lang>>() {
+    @Bean
+    public Module problemModule() {
+        return new ProblemModule().withStackTraces();
+    }
 
-            @Override
-            public Resource<Lang> process(Resource<Lang> resource) {
-
-                resource.add(new Link("http://localhost:8080/people", "added-link"));
-
-//                Link selfRel = linkTo(LangController.class).slash(entity.getLang()).withSelfRel();
-//                Link deleteRel = linkTo(LangController.class).slash(entity.getLang()).withRel("delete");
-//                Link updateRel = linkTo(LangController.class).slash(entity.getLang()).withRel("update");
-                return resource;
-            }
-        };
+    @Bean
+    public Module constraintViolationProblemModule() {
+        return new ConstraintViolationProblemModule();
     }
 }

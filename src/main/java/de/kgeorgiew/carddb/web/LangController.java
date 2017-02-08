@@ -3,7 +3,6 @@ package de.kgeorgiew.carddb.web;
 import de.kgeorgiew.carddb.domain.Lang;
 import de.kgeorgiew.carddb.service.LangRepository;
 import de.kgeorgiew.carddb.service.LangResourceAssembler;
-import org.springframework.data.rest.webmvc.PersistentEntityResourceAssembler;
 import org.springframework.hateoas.ExposesResourceFor;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resource;
@@ -22,7 +21,6 @@ import javax.validation.Valid;
 public class LangController {
 
     private LangRepository repository;
-
     private LangResourceAssembler resourceAssembler;
 
     public LangController(LangRepository repository, LangResourceAssembler resourceAssembler) {
@@ -31,11 +29,8 @@ public class LangController {
     }
 
     @RequestMapping(method = RequestMethod.POST)
-    @ResponseBody
-    public ResponseEntity<Resource<Lang>> create(@Valid @RequestBody Lang entity, PersistentEntityResourceAssembler pera) {
+    public ResponseEntity<Resource<Lang>> create(@Valid @RequestBody Lang entity) {
         Lang result = repository.create(entity);
-      //  return new ResponseEntity<>(new ResultBuilder().setPayload(result).build(), HttpStatus.CREATED);
-//        new Resource<>(result);
         return new ResponseEntity<>(resourceAssembler.toResource(result), HttpStatus.CREATED);
     }
 

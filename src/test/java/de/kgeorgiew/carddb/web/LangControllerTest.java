@@ -2,6 +2,7 @@ package de.kgeorgiew.carddb.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kgeorgiew.carddb.ConstrainedFields;
 import de.kgeorgiew.carddb.domain.Lang;
 import de.kgeorgiew.carddb.service.LangRepository;
 import de.kgeorgiew.carddb.service.SystemTimeService;
@@ -9,26 +10,39 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-import java.time.*;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.*;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.operation.preprocess.Preprocessors.*;
+import static org.springframework.restdocs.payload.PayloadDocumentation.*;
+import static org.springframework.restdocs.snippet.Attributes.attributes;
+import static org.springframework.restdocs.snippet.Attributes.key;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -91,6 +105,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @WebMvcTest(LangController.class)
 @ActiveProfiles({"test"})
+@AutoConfigureRestDocs("target/generated-snippets")
 public class LangControllerTest {
 
     @MockBean
@@ -106,7 +121,6 @@ public class LangControllerTest {
     private ObjectMapper objectMapper;
 
     private String baseUrl = "/api/v1/lang/";
-    private String requiredField = "lang";
     private ZonedDateTime fixedDateTime;
 
     @Before
@@ -118,84 +132,78 @@ public class LangControllerTest {
 
     @Test
     public void createWithWrongContentTypeShouldFail() throws Exception {
-        RequestBuilder request = post(baseUrl).contentType(MediaType.TEXT_PLAIN_VALUE);
+        MockHttpServletRequestBuilder request = post(baseUrl).contentType(MediaType.TEXT_PLAIN_VALUE);
 
-        String expectedContent = "";
+        assert4xxError(request, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    }
+
+    //TODO This is testing the spring behavior. It should be same for all controllers, so outsource this code?
+    @Test
+    public void createWithInvalidJsonShouldFail() throws Exception {
+        String content = "";
+
+        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
+
+        //TODO check message
+        assert4xxError(request, HttpStatus.BAD_REQUEST);
+    }
+
+    //TODO This is testing the spring behavior. It should be same for all controllers, so outsource this code?
+    @Test
+    public void createShouldIgnoreUnknownFields() throws Exception {
+        Lang expectedResult = new Lang("ENG", "tester", fixedDateTime);
+        Lang lang = new Lang("ENG", null, null);
+
+        given(langRepository.create(lang)).willReturn(expectedResult);
+
+        String content = "{ \"lang\": \"ENG\", \"unknownField\": \"test\" }";
+
+        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
+
         mockMvc.perform(request)
-                .andExpect(status().isUnsupportedMediaType())
-                .andExpect(content().string(expectedContent));
+                .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.unknownField").doesNotExist());
     }
 
-    @Test
-    public void createWithShortFieldValueShouldFail() throws Exception {
-        String content = "{ \"lang\": \"\"}";
+//    @Test
+//    public void shouldReturnGermanErrorMessage() throws Exception {
+//        Locale expectedLocal = Locale.GERMAN;
+//        String content = "";
+//        String expectedMsg = messageSource.getMessage("error.request.body.invalid",
+//                null, expectedLocal);
+//
+//        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST)
+//                .locale(expectedLocal)
+//                .content(content);
+//
+//
+//        assert4xxError(request, HttpStatus.BAD_REQUEST);
+//    }
 
-        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
-
-        assertExpectedError(request, "Validation error")
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.errors[0].field",
-                        equalTo(requiredField)))
-                .andExpect(jsonPath("$.errors[0].message",
-                        equalTo("length must be exact 3")));
-    }
-
-    @Test
-    public void createWithLongFieldValueShouldFail() throws Exception {
-        String content = "{ \"lang\": \"ENGL\"}";
-
-        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
-
-        assertExpectedError(request, "Validation error")
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.errors[0].field",
-                        equalTo(requiredField)))
-                .andExpect(jsonPath("$.errors[0].message",
-                        equalTo("length must be exact 3")));
-    }
 
     @Test
-    public void createWithEmptyJsonShouldFail() throws Exception {
+    public void shouldReturnAnValidationError() throws Exception {
         String content = "{}";
 
         MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
 
-        assertExpectedError(request, "Validation error")
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.errors[0].message",
-                        equalTo("may not be null")))
-                .andExpect(jsonPath("$.errors[0].field",
-                        equalTo(requiredField)));
+        String expectedTitle = "Constraint Violation";
+        int expectedStatus = HttpStatus.BAD_REQUEST.value();
+        String expectedField = "lang.lang";
 
-    }
+        mockMvc.perform(request)
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(status().is(expectedStatus))
 
+                .andExpect(jsonPath("$.type").isNotEmpty())
+                .andExpect(jsonPath("$.title", equalTo(expectedTitle)))
+                .andExpect(jsonPath("$.status", equalTo(expectedStatus)))
+                .andExpect(jsonPath("$.detail").doesNotExist())
 
-    @Test
-    public void createWithInvalidJsonShouldFail() throws Exception {
-        String content = "";
-        String expectedMsg = messageSource.getMessage("error.request.body.invalid", null, Locale.getDefault());
-
-        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
-
-        assertExpectedError(request, expectedMsg)
-                .andExpect(status().isBadRequest());
-    }
-
-
-    @Test
-    public void shouldReturnGermanErrorMessage() throws Exception {
-        Locale expectedLocal = Locale.GERMAN;
-        String content = "";
-        String expectedMsg = messageSource.getMessage("error.request.body.invalid",
-                null, expectedLocal);
-
-        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST)
-                .locale(expectedLocal)
-                .content(content);
-
-        assertExpectedError(request, expectedMsg)
-                .andExpect(status().isBadRequest());
-
+                .andExpect(jsonPath("$.violations", hasSize(1)))
+                .andExpect(jsonPath("$.violations[0].field", equalTo(expectedField)))
+                .andExpect(jsonPath("$.violations[0].message").isNotEmpty());
     }
 
     @Test
@@ -205,23 +213,40 @@ public class LangControllerTest {
 
         given(langRepository.create(lang)).willReturn(expectedResult);
 
-        String content = "{ \"lang\": \"ENG\", \"unexpectedField\": \"unexpected\" }";
+        Map<String, Object> content = new HashMap<>();
+        content.put("lang", "ENG");
 
-        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
+        MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(objectMapper.writeValueAsString(content));
 
-        String expecedCreated = getAsString(expectedResult.getCreated());
+        String expectedCreated = getAsString(expectedResult.getCreated());
+
         mockMvc.perform(request)
             .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.lang", equalTo(expectedResult.getLang())))
             .andExpect(jsonPath("$.createdBy", equalTo(expectedResult.getCreatedBy())))
-            .andExpect(jsonPath("$.created", equalTo(expecedCreated)))
+            .andExpect(jsonPath("$.created", equalTo(expectedCreated)))
 
-            // Expected links
-//            .andExpect(jsonPath("$._links.profile").exists())
-            .andExpect(jsonPath("$._links.self.href").isString())
-            .andExpect(jsonPath("$._links.delete.href").isString())
-            .andExpect(jsonPath("$._links.update.href").isString());
+            .andDo(document("langCreate",
+                    preprocessRequest(prettyPrint()),
+                    preprocessResponse(prettyPrint()),
+                links(halLinks(),
+                    linkWithRel("self").description("Self link"),
+                    linkWithRel("ex:delete").description("Link to delete the resource"),
+                    linkWithRel("ex:update").description("Link to update the resource <resources-update,update>"),
+                    linkWithRel("curies").description("Extension link description ")
+                ),
+                requestFields(
+                        attributes(key("title").value("Request fields")),
+                        new ConstrainedFields(Lang.class).withPath("lang").description("The language")
+                ),
+                responseFields(
+                        fieldWithPath("lang").description("The language"),
+                        fieldWithPath("createdBy").description("The creation timestamp"),
+                        fieldWithPath("created").description("The creation user"),
+                        fieldWithPath("_links").description("<<resources-tag-links,Links>> to other resources")
+                )
+            ));
 
         verify(langRepository).create(lang);
     }
@@ -229,17 +254,15 @@ public class LangControllerTest {
     @Test
     public void createShouldFailOnDuplicateEntry() throws Exception {
         String content = "{ \"lang\": \"ENG\" }";
+        String expectedMsg = messageSource.getMessage("error.entity.duplicateEntry", null, Locale.getDefault());
 
         Lang lang = new Lang("ENG", null, null);
-        given(langRepository.create(lang)).willThrow(DuplicateKeyException.class);
 
-        String expectedMsg = messageSource.getMessage("error.entity.duplicateEntry", null, Locale.getDefault());
+        given(langRepository.create(lang)).willThrow(new DuplicateKeyException(expectedMsg));
 
         MockHttpServletRequestBuilder request = jsonRequest(HttpMethod.POST).content(content);
 
-        assertExpectedError(request, expectedMsg)
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.errors").doesNotExist());
+        assert4xxError(request, HttpStatus.CONFLICT);
 
         verify(langRepository).create(lang);
 
@@ -255,11 +278,18 @@ public class LangControllerTest {
         return request;
     }
 
-    private ResultActions assertExpectedError(MockHttpServletRequestBuilder request, String expectedMsg) throws Exception {
+    private ResultActions assert4xxError(MockHttpServletRequestBuilder request,
+                                         HttpStatus status) throws Exception {
+        int expectedStatus = status.value();
+        String expectedTitle = status.getReasonPhrase();
         return mockMvc.perform(request)
-                .andExpect(status().is4xxClientError())
-                .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON))
-                .andExpect(jsonPath("$.message", equalTo(expectedMsg)));
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(status().is(expectedStatus))
+
+                .andExpect(jsonPath("$.type").doesNotExist())
+                .andExpect(jsonPath("$.title", equalTo(expectedTitle)))
+                .andExpect(jsonPath("$.status", equalTo(expectedStatus)))
+                .andExpect(jsonPath("$.detail").isNotEmpty());
     }
 
     private String getAsString(ZonedDateTime dateTime) throws JsonProcessingException {

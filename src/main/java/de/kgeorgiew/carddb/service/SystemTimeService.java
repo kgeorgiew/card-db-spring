@@ -34,7 +34,7 @@ public class SystemTimeService {
     }
 
     public ZonedDateTime asZonedDateTime() {
-        return ZonedDateTime.now(clock); //asLocalDateTime(), clock.getZone());
+        return ZonedDateTime.now(clock);
     }
 
 }
