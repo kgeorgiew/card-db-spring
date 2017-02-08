@@ -1,4 +1,4 @@
-package de.kgeorgiew.carddb.exception;
+package de.kgeorgiew.carddb.exception.handler;
 
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.ResponseEntity;

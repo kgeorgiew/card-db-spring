@@ -1,0 +1,30 @@
+[[resources-lang]]
+== Lang
+
+The Lang resources is used to create and list languages
+
+[[resources-lang-create]]
+=== Creating a lang
+
+A `POST` request is used to create a note
+
+==== Request structure
+
+include::{snippets}/lang/create/request-fields.adoc[]
+
+==== Example request
+
+include::{snippets}/lang/create/curl-request.adoc[]
+
+==== Example response
+
+include::{snippets}/lang/create/http-response.adoc[]
+
+==== Response structure
+
+include::{snippets}/lang/create/response-fields.adoc[]
+
+[[resources-lang-create-links]]
+==== Links
+
+include::{snippets}/lang/create/links.adoc[]

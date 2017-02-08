@@ -3,6 +3,8 @@ package de.kgeorgiew.carddb.service;
 import de.kgeorgiew.carddb.domain.Lang;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 /**
  * @author kgeorgiew
  */
@@ -13,4 +15,10 @@ public class JooqLangRepository implements LangRepository {
     public Lang create(Lang lang) {
         return null;
     }
+
+    @Override
+    public Optional<Lang> get(String id) {
+        return null;
+    }
+
 }

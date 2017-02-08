@@ -26,10 +26,9 @@
         <mysql.version>6.0.5</mysql.version>
         <h2.version>1.4.193</h2.version>
         <hikaricp.version>2.5.1</hikaricp.version>
-        <!--<junitparams.version>1.0.5</junitparams.version>-->
         <springhateoas.version>0.23.0.RELEASE</springhateoas.version>
         <springrestdocs.version>1.1.2.RELEASE</springrestdocs.version>
-        <immutablesValue.version>2.4.3</immutablesValue.version>
+        <asciidoctor.version>1.5.3</asciidoctor.version>
 
         <snippetsDirectory>${project.build.directory}/generated-snippets</snippetsDirectory>
     </properties>
@@ -104,13 +103,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.immutables</groupId>
-            <artifactId>value</artifactId>
-            <version>${immutablesValue.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
@@ -126,14 +118,6 @@
             <artifactId>problem-spring-web</artifactId>
             <version>0.17.0</version>
         </dependency>
-        <!--
-        <dependency>
-            <groupId>pl.pragmatists</groupId>
-            <artifactId>JUnitParams</artifactId>
-            <version>${junitparams.version}</version>
-            <scope>test</scope>
-        </dependency>
--->
     </dependencies>
 
     <build>
@@ -166,7 +150,7 @@
             <plugin>
                 <groupId>org.asciidoctor</groupId>
                 <artifactId>asciidoctor-maven-plugin</artifactId>
-                <version>1.5.2</version>
+                <version>${asciidoctor.version}</version>
                 <executions>
                     <execution>
                         <id>generate-docs</id>
@@ -175,6 +159,9 @@
                             <goal>process-asciidoc</goal>
                         </goals>
                         <configuration>
+                            <sourceDirectory>src/docs/asciidoc</sourceDirectory>
+                            <outputDirectory>target/docs/asciidoc</outputDirectory>
+                            <sourceDocumentName>index.adoc</sourceDocumentName>
                             <backend>html</backend>
                             <doctype>book</doctype>
                             <attributes>

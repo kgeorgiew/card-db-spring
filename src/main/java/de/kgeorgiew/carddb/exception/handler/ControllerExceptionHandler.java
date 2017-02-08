@@ -1,16 +1,25 @@
-package de.kgeorgiew.carddb.web;
+package de.kgeorgiew.carddb.exception.handler;
 
-import de.kgeorgiew.carddb.exception.DuplicateKeyAdviceTrait;
+import de.kgeorgiew.carddb.exception.ResourceNotFoundException;
+import de.kgeorgiew.carddb.exception.handler.DuplicateKeyAdviceTrait;
+import de.kgeorgiew.carddb.exception.handler.NotFoundAdviceTrait;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.zalando.problem.Problem;
 import org.zalando.problem.spring.web.advice.ProblemHandling;
 
 /**
  * @author kgeorgiew
  */
 @ControllerAdvice
-public class ControllerExceptionHandler implements ProblemHandling, DuplicateKeyAdviceTrait {
+public class ControllerExceptionHandler implements ProblemHandling, DuplicateKeyAdviceTrait, NotFoundAdviceTrait {
 
-//    @Autowired
+
+
+    //    @Autowired
 //    private MessageSource messageSource;
 //
 //
