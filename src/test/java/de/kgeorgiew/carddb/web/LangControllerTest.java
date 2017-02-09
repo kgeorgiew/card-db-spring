@@ -1,31 +1,49 @@
 package de.kgeorgiew.carddb.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.kgeorgiew.carddb.ConstrainedFields;
+import de.kgeorgiew.carddb.config.AppConfig;
 import de.kgeorgiew.carddb.domain.Lang;
+import de.kgeorgiew.carddb.exception.handler.ControllerExceptionHandler;
 import de.kgeorgiew.carddb.service.LangRepository;
+import de.kgeorgiew.carddb.service.LangResourceAssembler;
 import de.kgeorgiew.carddb.service.SystemTimeService;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.MessageSource;
+import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.core.EvoInflectorRelProvider;
+import org.springframework.hateoas.hal.DefaultCurieProvider;
+import org.springframework.hateoas.hal.Jackson2HalModule;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.restdocs.JUnitRestDocumentation;
 import org.springframework.restdocs.hypermedia.LinksSnippet;
 import org.springframework.restdocs.payload.ResponseFieldsSnippet;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.zalando.problem.ProblemModule;
+import org.zalando.problem.validation.ConstraintViolationProblemModule;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -36,15 +54,18 @@ import java.util.Optional;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.*;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.request;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.*;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -54,15 +75,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(LangController.class)
 @AutoConfigureRestDocs("target/generated-snippets/lang")
 public class LangControllerTest {
+//
+//    @Rule
+//    public JUnitRestDocumentation restDocumentation =
+//            new JUnitRestDocumentation("target/generated-snippets/lang");
 
     @MockBean
     private LangRepository langRepository;
 
+    @InjectMocks
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private MessageSource messageSource;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -86,6 +109,28 @@ public class LangControllerTest {
 
     @Before
     public void setUp() {
+//        langRepository = mock(LangRepository.class);
+//
+//        final LangController controller = new LangController(langRepository, new LangResourceAssembler());
+//        objectMapper = new ObjectMapper().registerModules(
+//                new ProblemModule(),
+//                new ConstraintViolationProblemModule(),
+//                new JavaTimeModule(),
+//                new Jdk8Module(),
+//                new Jackson2HalModule()
+//        );
+//        AppConfig appConfig = new AppConfig();
+//
+//        objectMapper.setHandlerInstantiator(
+//                new Jackson2HalModule.HalHandlerInstantiator(new EvoInflectorRelProvider(), appConfig.curieProvider(), null));
+//        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+//
+//        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+//                .apply(documentationConfiguration(this.restDocumentation))
+//                .setControllerAdvice(new ControllerExceptionHandler())
+//                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+//                .build();
+
         Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
         SystemTimeService fixedTimeService = new SystemTimeService(fixedClock);
         fixedDateTime = fixedTimeService.asZonedDateTime();
@@ -135,6 +180,7 @@ public class LangControllerTest {
         int expectedStatus = HttpStatus.BAD_REQUEST.value();
         String expectedField = "lang.lang";
 
+        //TODO Test against Problem pojo?
         mockMvc.perform(request)
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(status().is(expectedStatus))

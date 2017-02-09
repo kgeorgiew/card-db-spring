@@ -14,7 +14,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author kgeorgiew
  */
-@RunWith(JUnit4.class)
 public class SystemTimeServiceTest {
 
     @Test

@@ -4,7 +4,6 @@ import de.kgeorgiew.carddb.domain.Lang;
 import de.kgeorgiew.carddb.exception.ResourceNotFoundException;
 import de.kgeorgiew.carddb.service.LangRepository;
 import de.kgeorgiew.carddb.service.LangResourceAssembler;
-import org.springframework.hateoas.ExposesResourceFor;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resource;
 import org.springframework.http.HttpStatus;
@@ -22,7 +21,6 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping(value = "/api/v1/lang", produces = MediaTypes.HAL_JSON_VALUE)
-@ExposesResourceFor(Lang.class)
 public class LangController {
 
     private final LangRepository repository;

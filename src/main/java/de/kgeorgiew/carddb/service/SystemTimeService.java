@@ -1,5 +1,7 @@
 package de.kgeorgiew.carddb.service;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -23,7 +25,6 @@ public class SystemTimeService {
     public long asMillis() {
         return clock.millis();
     }
-
 
     public Instant asInstant() {
         return clock.instant();

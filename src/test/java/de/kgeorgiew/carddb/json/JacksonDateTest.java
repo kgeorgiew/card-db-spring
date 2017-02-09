@@ -1,5 +1,8 @@
 package de.kgeorgiew.carddb.json;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.kgeorgiew.carddb.service.SystemTimeService;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.StringReader;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 
@@ -33,12 +37,17 @@ public class JacksonDateTest {
     @Autowired
     private JacksonTester<LocalDateTime> localDateTimeConverter;
 
-
     private LocalDateTime fixedLocalDateTime;
     private ZonedDateTime fixedZonedDateTime;
 
+    private ObjectMapper objectMapper;
+
     @Before
     public void setUp() {
+//        objectMapper = new ObjectMapper();
+//        objectMapper.registerModule(new JavaTimeModule());
+//        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
         Clock fixedClock = Clock.fixed(Instant.ofEpochMilli(1234567890), ZoneId.systemDefault());
         SystemTimeService fixedTimeService = new SystemTimeService(fixedClock);
         fixedLocalDateTime = fixedTimeService.asLocalDateTime();
@@ -49,6 +58,7 @@ public class JacksonDateTest {
     public void deserializeZonedDateTimeShouldBeInExpectedFormat() throws Exception {
         String fixedDateTime = "1970-01-15T06:56:07.890Z";
         ZonedDateTime actual = zonedDateTimeConverter.parseObject("\"" + fixedDateTime + "\"");
+//        ZonedDateTime actual = objectMapper.readValue("\"" + fixedDateTime + "\"", ZonedDateTime.class);
         ZonedDateTime expected = fixedZonedDateTime.withZoneSameInstant(ZoneId.of("UTC"));
 
         assertThat(actual, is(equalTo(expected)));
@@ -57,8 +67,8 @@ public class JacksonDateTest {
     @Test
     public void serializeZonedDateTimeShouldBeInExpectedFormat() throws Exception {
         String expected = fixedZonedDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-//        String expected = "1970-01-15T06:56:07.890Z";
         String actual = zonedDateTimeConverter.write(fixedZonedDateTime).getJson();
+//        String actual = objectMapper.writeValueAsString(fixedZonedDateTime);
 
         assertThat(actual, is(equalTo("\"" + expected + "\"")));
     }
@@ -79,5 +89,4 @@ public class JacksonDateTest {
 
         assertThat(actual, is(equalTo("\"" + expected + "\"")));
     }
-
 }
