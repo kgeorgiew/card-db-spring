@@ -56,9 +56,9 @@ public class JacksonDateTest {
 
     @Test
     public void deserializeZonedDateTimeShouldBeInExpectedFormat() throws Exception {
-        String fixedDateTime = "1970-01-15T06:56:07.890Z";
-        ZonedDateTime actual = zonedDateTimeConverter.parseObject("\"" + fixedDateTime + "\"");
-//        ZonedDateTime actual = objectMapper.readValue("\"" + fixedDateTime + "\"", ZonedDateTime.class);
+        String zonedDateTime = fixedZonedDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+
+        ZonedDateTime actual = zonedDateTimeConverter.parseObject("\"" + zonedDateTime + "\"");
         ZonedDateTime expected = fixedZonedDateTime.withZoneSameInstant(ZoneId.of("UTC"));
 
         assertThat(actual, is(equalTo(expected)));
@@ -66,17 +66,18 @@ public class JacksonDateTest {
 
     @Test
     public void serializeZonedDateTimeShouldBeInExpectedFormat() throws Exception {
-        String expected = fixedZonedDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         String actual = zonedDateTimeConverter.write(fixedZonedDateTime).getJson();
-//        String actual = objectMapper.writeValueAsString(fixedZonedDateTime);
+        String expected = fixedZonedDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
         assertThat(actual, is(equalTo("\"" + expected + "\"")));
     }
 
+    // TODO Test fails in travis
     @Test
     public void deserializeLocalDateTimeShouldBeInExpectedFormat() throws Exception {
-        String fixedDateTime = "1970-01-15T07:56:07.890"; // Offset included
-        LocalDateTime actual = localDateTimeConverter.parseObject("\"" + fixedDateTime + "\"");
+        String localDateTime = fixedLocalDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+        LocalDateTime actual = localDateTimeConverter.parseObject("\"" + localDateTime + "\"");
         LocalDateTime expected = fixedLocalDateTime;
 
         assertThat(actual, is(equalTo(expected)));
@@ -84,8 +85,8 @@ public class JacksonDateTest {
 
     @Test
     public void serializeLocalDateTimeShouldBeInExpectedFormat() throws Exception {
-        String expected = fixedLocalDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         String actual = localDateTimeConverter.write(fixedLocalDateTime).getJson();
+        String expected = fixedLocalDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
         assertThat(actual, is(equalTo("\"" + expected + "\"")));
     }
