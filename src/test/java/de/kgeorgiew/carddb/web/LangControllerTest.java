@@ -1,20 +1,13 @@
 package de.kgeorgiew.carddb.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.kgeorgiew.carddb.ConstrainedFields;
-import de.kgeorgiew.carddb.config.AppConfig;
 import de.kgeorgiew.carddb.domain.Lang;
-import de.kgeorgiew.carddb.exception.handler.ControllerExceptionHandler;
 import de.kgeorgiew.carddb.service.LangRepository;
-import de.kgeorgiew.carddb.service.LangResourceAssembler;
+import de.kgeorgiew.carddb.service.MessagesService;
 import de.kgeorgiew.carddb.service.SystemTimeService;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -22,28 +15,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.core.EvoInflectorRelProvider;
-import org.springframework.hateoas.hal.DefaultCurieProvider;
-import org.springframework.hateoas.hal.Jackson2HalModule;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.restdocs.JUnitRestDocumentation;
 import org.springframework.restdocs.hypermedia.LinksSnippet;
 import org.springframework.restdocs.payload.ResponseFieldsSnippet;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.zalando.problem.ProblemModule;
-import org.zalando.problem.validation.ConstraintViolationProblemModule;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -83,12 +66,20 @@ public class LangControllerTest {
     @MockBean
     private LangRepository langRepository;
 
-    @InjectMocks
+    @Autowired
+    private MessagesService messages;
+
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    private String baseUrl = "/api/v1/lang";
+
+    private String prePersistLangJson;
+    private Lang prePersistLang;
+    private Lang persistedLang;
 
     private final LinksSnippet interactionLinks = links(halLinks(),
             linkWithRel("self").description("Self link"),
@@ -103,9 +94,6 @@ public class LangControllerTest {
             fieldWithPath("created").description("The creation user"),
             fieldWithPath("_links").description("<<resources-lang-links,Links>> to other resources")
     );
-
-    private String baseUrl = "/api/v1/lang";
-    private ZonedDateTime fixedDateTime;
 
     @Before
     public void setUp() {
@@ -132,26 +120,11 @@ public class LangControllerTest {
 //                .build();
 
         Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
-        SystemTimeService fixedTimeService = new SystemTimeService(fixedClock);
-        fixedDateTime = fixedTimeService.asZonedDateTime();
-    }
+        ZonedDateTime fixedDateTime = new SystemTimeService(fixedClock).asZonedDateTime();
 
-    @Test
-    public void createWithWrongContentTypeShouldFail() throws Exception {
-        RequestBuilder request = post(baseUrl).contentType(MediaType.TEXT_PLAIN_VALUE);
-
-        assert4xxError(request, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-    }
-
-    // TODO This is testing the spring behavior.
-    // It should be same for all controllers, so outsource this code?
-    @Test
-    public void createWithInvalidJsonShouldFail() throws Exception {
-        String content = "";
-
-        RequestBuilder request = jsonRequest(HttpMethod.POST, content);
-
-        assert4xxError(request, HttpStatus.BAD_REQUEST);
+        this.prePersistLangJson = "{ \"lang\": \"ENG\" }";
+        this.prePersistLang = new Lang("ENG", null, null);
+        this.persistedLang = new Lang("ENG", "tester", fixedDateTime);
     }
 
 //    @Test
@@ -169,7 +142,6 @@ public class LangControllerTest {
 //        assert4xxError(request, HttpStatus.BAD_REQUEST);
 //    }
 
-
     @Test
     public void shouldReturnAnValidationError() throws Exception {
         String content = "{}";
@@ -180,7 +152,6 @@ public class LangControllerTest {
         int expectedStatus = HttpStatus.BAD_REQUEST.value();
         String expectedField = "lang.lang";
 
-        //TODO Test against Problem pojo?
         mockMvc.perform(request)
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(status().is(expectedStatus))
@@ -197,15 +168,11 @@ public class LangControllerTest {
 
     @Test
     public void createShouldReturnJsonWithCreatedFields() throws Exception {
-        String content = "{ \"lang\": \"ENG\" }";
-        Lang lang = new Lang("ENG", null, null);
-        Lang expectedResult = new Lang("ENG", "tester", fixedDateTime);
+        given(langRepository.create(prePersistLang)).willReturn(persistedLang);
 
-        given(langRepository.create(lang)).willReturn(expectedResult);
+        RequestBuilder request = jsonRequest(HttpMethod.POST, prePersistLangJson);
 
-        RequestBuilder request = jsonRequest(HttpMethod.POST, content);
-
-        assert20xWithEntry(request, HttpStatus.CREATED, expectedResult)
+        assert20xWithEntry(request, HttpStatus.CREATED, persistedLang)
                 .andDo(document("create",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -216,38 +183,34 @@ public class LangControllerTest {
                         responseFields
                 ));
 
-        verify(langRepository).create(lang);
+        verify(langRepository).create(prePersistLang);
     }
 
-    // TODO Should be test in the repository test
     @Test
     public void createShouldFailOnDuplicateEntry() throws Exception {
-        String content = "{ \"lang\": \"ENG\" }";
         String expectedMsg = "Entry already exists";
-        Lang lang = new Lang("ENG", null, null);
 
-        given(langRepository.create(lang)).willThrow(new DuplicateKeyException(expectedMsg));
+        given(langRepository.create(prePersistLang)).willThrow(new DuplicateKeyException(expectedMsg));
 
-        RequestBuilder request = jsonRequest(HttpMethod.POST, content);
+        RequestBuilder request = jsonRequest(HttpMethod.POST, prePersistLangJson);
 
         assert4xxError(request, HttpStatus.CONFLICT);
 
-        verify(langRepository).create(lang);
+        verify(langRepository).create(prePersistLang);
     }
 
     @Test
     public void getShouldReturnOneEntryById() throws Exception {
-        String inputLang = "ENG";
-        String requestUrl = baseUrl  + "/{lang}";
-        Lang expectedResult = new Lang(inputLang, "tester", fixedDateTime);
+        String inputLang = persistedLang.getLang();
+        String getUrl = baseUrl  + "/{lang}";
 
-        given(langRepository.get(inputLang)).willReturn(Optional.of(expectedResult));
+        given(langRepository.get(inputLang)).willReturn(Optional.of(persistedLang));
 
-        RequestBuilder request = request(HttpMethod.GET, requestUrl, inputLang)
+        RequestBuilder request = request(HttpMethod.GET, getUrl, inputLang)
                 .accept(MediaTypes.HAL_JSON, MediaType.APPLICATION_JSON)
                 .characterEncoding("utf-8");
 
-        assert20xWithEntry(request, HttpStatus.OK, expectedResult)
+        assert20xWithEntry(request, HttpStatus.OK, persistedLang)
                 .andDo(document("get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -264,12 +227,12 @@ public class LangControllerTest {
     @Test
     public void getShouldReturnNotFound() throws Exception {
         String inputLang = "DEU";
-        String requestUrl = baseUrl  + "/{lang}";
-        String expectedMessage = "Entry for " + inputLang + " not found";
+        String getUrl = baseUrl  + "/{lang}";
+        String expectedMessage = messages.getMessage("error.entity.notFound", inputLang);
 
         given(langRepository.get(inputLang)).willReturn(Optional.empty());
 
-        RequestBuilder request = request(HttpMethod.GET, requestUrl, inputLang)
+        RequestBuilder request = request(HttpMethod.GET, getUrl, inputLang)
                 .accept(MediaTypes.HAL_JSON, MediaType.APPLICATION_JSON)
                 .characterEncoding("utf-8");
 
@@ -280,14 +243,11 @@ public class LangControllerTest {
     }
 
     private MockHttpServletRequestBuilder jsonRequest(HttpMethod method, String content) throws Exception {
-        return jsonRequest(method).content(content);
-    }
-
-    private MockHttpServletRequestBuilder jsonRequest(HttpMethod method) throws Exception {
         return request(method, baseUrl)
                 .accept(MediaTypes.HAL_JSON_VALUE, MediaType.APPLICATION_JSON_VALUE)
                 .characterEncoding("utf-8")
-                .contentType(MediaType.APPLICATION_JSON);
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(content);
     }
 
     private ResultActions assert20xWithEntry(RequestBuilder request, HttpStatus status, Lang expectedResult) throws Exception {

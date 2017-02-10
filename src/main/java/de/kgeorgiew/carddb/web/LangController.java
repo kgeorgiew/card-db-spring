@@ -4,6 +4,9 @@ import de.kgeorgiew.carddb.domain.Lang;
 import de.kgeorgiew.carddb.exception.ResourceNotFoundException;
 import de.kgeorgiew.carddb.service.LangRepository;
 import de.kgeorgiew.carddb.service.LangResourceAssembler;
+import de.kgeorgiew.carddb.service.MessagesService;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resource;
 import org.springframework.http.HttpStatus;
@@ -21,15 +24,12 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping(value = "/api/v1/lang", produces = MediaTypes.HAL_JSON_VALUE)
+@RequiredArgsConstructor
 public class LangController {
 
-    private final LangRepository repository;
-    private final LangResourceAssembler resourceAssembler;
-
-    public LangController(LangRepository repository, LangResourceAssembler resourceAssembler) {
-        this.repository = repository;
-        this.resourceAssembler = resourceAssembler;
-    }
+    private final @NonNull LangRepository repository;
+    private final @NonNull LangResourceAssembler resourceAssembler;
+    private final @NonNull MessagesService messages;
 
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<Resource<Lang>> create(@Valid @RequestBody Lang entity) {
@@ -43,7 +43,7 @@ public class LangController {
         return result.map( entity ->
                 new ResponseEntity<>(resourceAssembler.toResource(entity), HttpStatus.OK)
             ).orElseThrow(() ->
-                new ResourceNotFoundException("Entry for " + lang + " not found")
+                new ResourceNotFoundException(messages.getMessage("error.entity.notFound", lang))
             );
     }
 

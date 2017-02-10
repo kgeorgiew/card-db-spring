@@ -1,0 +1,17 @@
+language: java
+
+# use Docker-based container (instead of OpenVZ)
+sudo: false
+
+jdk:
+  - oraclejdk8
+
+cache:
+  directories:
+      - $HOME/.m2
+
+notifications:
+  email:
+    - k.georgiew@gmail.com
+
+script: ./mvnw clean verify

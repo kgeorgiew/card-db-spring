@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.hateoas.UriTemplate;
 import org.springframework.hateoas.hal.CurieProvider;
 import org.springframework.hateoas.hal.DefaultCurieProvider;
@@ -43,5 +44,10 @@ public class AppConfig {
         return new ConstraintViolationProblemModule();
     }
 
-
+    @Bean
+    public ResourceBundleMessageSource messageSource() {
+        ResourceBundleMessageSource source = new ResourceBundleMessageSource();
+        source.setBasenames("i18n/messages");
+        return source;
+    }
 }

@@ -14,13 +14,10 @@ import java.time.ZonedDateTime;
  */
 
 @Service
+@RequiredArgsConstructor
 public class SystemTimeService {
 
-    private final Clock clock;
-
-    public SystemTimeService(Clock clock) {
-        this.clock = clock;
-    }
+    private final @NonNull Clock clock;
 
     public long asMillis() {
         return clock.millis();
