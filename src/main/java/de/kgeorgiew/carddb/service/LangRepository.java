@@ -13,4 +13,7 @@ public interface LangRepository {
 
     Optional<Lang> get(String id);
 
+    void delete(String id);
+
+    Lang update(Lang lang);
 }

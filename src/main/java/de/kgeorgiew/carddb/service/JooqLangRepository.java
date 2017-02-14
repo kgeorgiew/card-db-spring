@@ -21,4 +21,14 @@ public class JooqLangRepository implements LangRepository {
         return null;
     }
 
+    @Override
+    public void delete(String id) {
+
+    }
+
+    @Override
+    public Lang update(Lang lang) {
+        return null;
+    }
+
 }

@@ -8,7 +8,8 @@ import org.zalando.problem.spring.web.advice.ProblemHandling;
  */
 @ControllerAdvice
 public class ControllerExceptionHandler implements ProblemHandling,
-        DuplicateKeyAdviceTrait,
-        NotFoundAdviceTrait {
+        ResourceNotFoundAdviceTrait,
+        DatabaseExceptionHandler,
+        ResourceMissmatchAdviceTrait {
 
 }

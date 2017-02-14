@@ -1,6 +1,7 @@
 package de.kgeorgiew.carddb.web;
 
 import de.kgeorgiew.carddb.domain.Lang;
+import de.kgeorgiew.carddb.exception.ResourceMissmatchException;
 import de.kgeorgiew.carddb.exception.ResourceNotFoundException;
 import de.kgeorgiew.carddb.service.LangRepository;
 import de.kgeorgiew.carddb.service.LangResourceAssembler;
@@ -46,5 +47,25 @@ public class LangController {
                 new ResourceNotFoundException(messages.getMessage("error.entity.notFound", lang))
             );
     }
+
+    @RequestMapping(value = "{lang}", method = RequestMethod.DELETE)
+    public ResponseEntity delete(@PathVariable String lang) {
+        repository.delete(lang);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+
+    @RequestMapping(value = "{lang}", method = RequestMethod.PUT)
+    public ResponseEntity<Resource<Lang>> update(@PathVariable String lang, @Valid @RequestBody Lang entity) {
+        if(!lang.equals(entity.getLang())) {
+            throw new ResourceMissmatchException(
+                    messages.getMessage("error.url.parameter.mismatch", lang, entity.getLang())
+            );
+        }
+        Lang updatedLang = repository.update(entity);
+
+        return new ResponseEntity<>(resourceAssembler.toResource(updatedLang), HttpStatus.OK);
+    }
+
 
 }

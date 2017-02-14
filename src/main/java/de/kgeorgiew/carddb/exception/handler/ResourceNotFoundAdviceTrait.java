@@ -1,6 +1,6 @@
 package de.kgeorgiew.carddb.exception.handler;
 
-import org.springframework.dao.DuplicateKeyException;
+import de.kgeorgiew.carddb.exception.ResourceNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.NativeWebRequest;
@@ -11,17 +11,14 @@ import javax.ws.rs.core.Response;
 
 /**
  * @author kgeorgiew
- *
- * @see DuplicateKeyException
- * @see Response.Status#CONFLICT
  */
-public interface DuplicateKeyAdviceTrait extends AdviceTrait {
+public interface ResourceNotFoundAdviceTrait extends AdviceTrait {
 
     @ExceptionHandler
-    default ResponseEntity<Problem> handleDuplicateKeyException(
-            final DuplicateKeyException exception,
+    default ResponseEntity<Problem> handleNotFoundException(
+            final ResourceNotFoundException exception,
             final NativeWebRequest request) {
-        return create(Response.Status.CONFLICT, exception, request);
-    }
 
+        return create(Response.Status.NOT_FOUND, exception, request);
+    }
 }

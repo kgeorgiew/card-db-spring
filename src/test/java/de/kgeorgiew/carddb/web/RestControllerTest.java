@@ -1,66 +1,112 @@
 package de.kgeorgiew.carddb.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.web.bind.annotation.*;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
+ * Test default controller error handling
+ *
  * @author kgeorgiew
  */
 @RunWith(SpringRunner.class)
-@WebMvcTest(TestController.class)
-public class RestControllerTest {
+@WebMvcTest(RestControllerTest.TestController.class)
+public class RestControllerTest implements CrudAssertTrait {
 
     @Autowired
     private MockMvc mockMvc;
 
-    private final String baseUrl = "/test";
-    private String errorContentType = org.zalando.problem.spring.web.advice.MediaTypes.PROBLEM_VALUE;
+    @Override
+    public ResultActions doRequest(RequestBuilder request) throws Exception {
+        return mockMvc.perform(request);
+    }
+
+    @Override
+    public String baseUrl() {
+        return TestController.baseUrl;
+    }
 
     @Test
     public void postWithInvalidJsonShouldFail() throws Exception {
         String content = "";
 
-        HttpStatus status = HttpStatus.BAD_REQUEST;
+        RequestBuilder request = buildJsonRequest(HttpMethod.POST, content)
+                .contentType(MediaType.TEXT_PLAIN_VALUE);
 
-        mockMvc.perform(
-                post(baseUrl)
-                .accept(MediaType.APPLICATION_JSON_VALUE)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(content)
-        ).andExpect(content().contentTypeCompatibleWith(errorContentType))
-                .andExpect(status().is(status.value()))
-                .andExpect(jsonPath("$.type").doesNotExist())
-                .andExpect(jsonPath("$.title", equalTo(status.getReasonPhrase())))
-                .andExpect(jsonPath("$.status", equalTo(status.value())))
-                .andExpect(jsonPath("$.detail").isNotEmpty());
+        assert4xxResponse(request, HttpStatus.BAD_REQUEST);
     }
 
     @Test
-    public void requestWithWrongContentTypeShouldFail() throws Exception {
-        HttpStatus status = HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+    public void postWithWrongContentTypeShouldFail() throws Exception {
+        RequestBuilder request = buildJsonRequest(HttpMethod.POST, "{}")
+                .contentType(MediaType.TEXT_PLAIN_VALUE);
 
-        mockMvc.perform(
-                post(baseUrl)
-                        .accept(MediaType.APPLICATION_JSON_VALUE)
-                        .contentType(MediaType.TEXT_PLAIN_VALUE)
-        ).andExpect(content().contentTypeCompatibleWith(errorContentType))
-                .andExpect(status().is(status.value()))
-                .andExpect(jsonPath("$.type").doesNotExist())
-                .andExpect(jsonPath("$.title", equalTo(status.getReasonPhrase())))
-                .andExpect(jsonPath("$.status", equalTo(status.value())))
-                .andExpect(jsonPath("$.detail").isNotEmpty());
+        assert4xxResponse(request, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    }
+
+    @Test
+    public void getWithWrongPathVariableTypeShouldFail() throws Exception {
+        RequestBuilder request = buildRequestWithId(HttpMethod.GET, "wrongIdType")
+                .contentType(MediaType.TEXT_PLAIN_VALUE);
+
+        assert4xxResponse(request, HttpStatus.BAD_REQUEST)
+                .andExpect(jsonPath("$.detail",
+                        equalTo("Failed to convert value of type 'java.lang.String' to required type 'java.lang.Integer'; nested exception is java.lang.NumberFormatException: For input string: \"wrongIdType\"")));
+    }
+
+    @RestController
+    final static class TestController {
+
+        static final String baseUrl = "/test";
+        static final String idUrl = baseUrl + "/{id}";
+
+        @RequestMapping(value = baseUrl, method = RequestMethod.POST)
+        public ResponseEntity<TestPojo> create(@RequestBody TestPojo entity) {
+            return new ResponseEntity<>(entity, HttpStatus.CREATED);
+        }
+
+        @RequestMapping(value = idUrl, method = RequestMethod.GET)
+        public ResponseEntity<TestPojo> get(@PathVariable Integer id) {
+            return new ResponseEntity<>(new TestPojo(id, "TestField"), HttpStatus.OK);
+        }
+
+
+        final class TestPojo {
+
+            private Integer id;
+            private String field;
+
+            TestPojo() {
+            }
+
+            public TestPojo(Integer id, String field) {
+                this.id = id;
+                this.field = field;
+            }
+
+            public Integer getId() {
+                return id;
+            }
+
+            public String getField() {
+                return field;
+            }
+        }
     }
 }
