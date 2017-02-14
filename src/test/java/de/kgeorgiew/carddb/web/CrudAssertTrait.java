@@ -103,9 +103,7 @@ public interface CrudAssertTrait {
                 .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON));
     }
 
-    default String urlWithId()  {
-        return baseUrl() + "/{key}";
-    }
+    String urlWithId();
 
     String baseUrl();
 
