@@ -12,10 +12,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.bind.annotation.*;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.request;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -46,18 +46,17 @@ public class RestControllerTest implements CrudAssertTrait {
     public void postWithInvalidJsonShouldFail() throws Exception {
         String content = "";
 
-        RequestBuilder request = buildJsonRequest(HttpMethod.POST, content)
-                .contentType(MediaType.TEXT_PLAIN_VALUE);
+        RequestBuilder request = buildJsonRequest(HttpMethod.POST, content);
 
-        assert4xxResponse(request, HttpStatus.BAD_REQUEST);
+        assertError(request, HttpStatus.BAD_REQUEST);
     }
 
     @Test
     public void postWithWrongContentTypeShouldFail() throws Exception {
-        RequestBuilder request = buildJsonRequest(HttpMethod.POST, "{}")
+        RequestBuilder request = post(baseUrl())
                 .contentType(MediaType.TEXT_PLAIN_VALUE);
 
-        assert4xxResponse(request, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        assertError(request, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
     }
 
     @Test
@@ -65,7 +64,7 @@ public class RestControllerTest implements CrudAssertTrait {
         RequestBuilder request = buildRequestWithId(HttpMethod.GET, "wrongIdType")
                 .contentType(MediaType.TEXT_PLAIN_VALUE);
 
-        assert4xxResponse(request, HttpStatus.BAD_REQUEST)
+        assertError(request, HttpStatus.BAD_REQUEST)
                 .andExpect(jsonPath("$.detail",
                         equalTo("Failed to convert value of type 'java.lang.String' to required type 'java.lang.Integer'; nested exception is java.lang.NumberFormatException: For input string: \"wrongIdType\"")));
     }

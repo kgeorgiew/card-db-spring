@@ -20,8 +20,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 public interface CrudAssertTrait {
 
-    default ResultActions assert4xxResponse(RequestBuilder request,
-                                            HttpStatus status) throws Exception {
+    default ResultActions assertError(RequestBuilder request,
+                                      HttpStatus status) throws Exception {
         String errorContentType = org.zalando.problem.spring.web.advice.MediaTypes.PROBLEM_VALUE;
         return doRequest(request)
                 .andExpect(content().contentTypeCompatibleWith(errorContentType))
@@ -54,7 +54,7 @@ public interface CrudAssertTrait {
                                     .or(equalTo(HttpMethod.GET))
                                     .or(equalTo(HttpMethod.PUT))
         );
-        return request(method, baseUrl() + "/{key}", id)
+        return request(method, baseUrl() + "/{" + idParameterName() + "}", id)
                 .accept(MediaTypes.HAL_JSON, MediaType.APPLICATION_JSON)
                 .characterEncoding("utf-8");
     }
@@ -73,12 +73,15 @@ public interface CrudAssertTrait {
                 .content(content);
     }
 
-    default ResultActions assert20xResponse(RequestBuilder request, HttpStatus status) throws Exception {
+    default ResultActions assertSuccess(RequestBuilder request, HttpStatus status) throws Exception {
         return doRequest(request)
                 .andExpect(status().is(status.value()))
                 .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON));
     }
 
+    default String idParameterName()  {
+        return "key";
+    }
 
     String baseUrl();
 

@@ -20,8 +20,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 
 /**
  *
- * Serialize LocalDateTime should result in format yyyy-MM-dd'T'H:mm:ss.SSS
- * Deserialize '2017-01-10T15:08:46.948Z' should result in LocalDateTime 2017-01-10T16:08:46.948
  *
  * @author kgeorgiew
  */

@@ -16,7 +16,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -141,6 +140,10 @@ public class LangControllerTest implements CrudAssertTrait {
         return "/api/v1/lang";
     }
 
+    @Override
+    public String idParameterName() {
+        return "lang";
+    }
 
     @Override
     public ResultActions doRequest(RequestBuilder request) throws Exception {
@@ -159,7 +162,7 @@ public class LangControllerTest implements CrudAssertTrait {
 //                .content(content);
 //
 //
-//        assert4xxResponse(request, HttpStatus.BAD_REQUEST);
+//        assertError(request, HttpStatus.BAD_REQUEST);
 //    }
 
     @Test
@@ -204,7 +207,7 @@ public class LangControllerTest implements CrudAssertTrait {
 
         RequestBuilder request = buildJsonRequest(HttpMethod.POST, prePersistLangJson);
 
-        assert4xxResponse(request, HttpStatus.CONFLICT);
+        assertError(request, HttpStatus.CONFLICT);
 
         verify(langRepository).create(prePersistLang);
     }
@@ -247,7 +250,7 @@ public class LangControllerTest implements CrudAssertTrait {
 
         RequestBuilder request = buildRequestWithId(HttpMethod.GET, inputLang);
 
-        assert4xxResponse(request, HttpStatus.NOT_FOUND)
+        assertError(request, HttpStatus.NOT_FOUND)
                 .andExpect(jsonPath("$.detail", equalTo(expectedMessage)));
 
         verify(langRepository).get(inputLang);
@@ -286,7 +289,7 @@ public class LangControllerTest implements CrudAssertTrait {
 
         RequestBuilder request = buildRequestWithId(HttpMethod.DELETE, inputLang);
 
-        assert4xxResponse(request, HttpStatus.BAD_REQUEST);
+        assertError(request, HttpStatus.BAD_REQUEST);
 
         verify(langRepository).delete(inputLang);
     }
@@ -312,7 +315,7 @@ public class LangControllerTest implements CrudAssertTrait {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(prePersistLangJson);
 
-        assert4xxResponse(request, HttpStatus.BAD_REQUEST)
+        assertError(request, HttpStatus.BAD_REQUEST)
                 .andExpect(jsonPath("$.detail", equalTo(expectedMessage)));
     }
 
@@ -324,7 +327,7 @@ public class LangControllerTest implements CrudAssertTrait {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(preUpdateLang));
 
-        assert4xxResponse(request, HttpStatus.BAD_REQUEST);
+        assertError(request, HttpStatus.BAD_REQUEST);
 
         verify(langRepository).update(preUpdateLang);
     }
@@ -356,7 +359,7 @@ public class LangControllerTest implements CrudAssertTrait {
     }
 
     private ResultActions assert20xWithEntry(RequestBuilder request, HttpStatus status, Lang expectedResult) throws Exception {
-        return assert20xResponse(request, status)
+        return assertSuccess(request, status)
                 .andExpect(jsonPath("$.lang", equalTo(expectedResult.getLang())))
                 .andExpect(jsonPath("$.created", equalTo(getAsString(expectedResult.getCreated()))))
                 .andExpect(jsonPath("$.createdBy", equalTo(expectedResult.getCreatedBy())));
