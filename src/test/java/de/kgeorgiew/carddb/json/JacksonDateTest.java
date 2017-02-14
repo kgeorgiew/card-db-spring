@@ -72,7 +72,6 @@ public class JacksonDateTest {
         assertThat(actual, is(equalTo("\"" + expected + "\"")));
     }
 
-    // TODO Test fails in travis
     @Test
     public void deserializeLocalDateTimeShouldBeInExpectedFormat() throws Exception {
         String localDateTime = fixedLocalDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);

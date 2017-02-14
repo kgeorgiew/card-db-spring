@@ -16,9 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.restdocs.hypermedia.LinksSnippet;
 import org.springframework.restdocs.payload.ResponseFieldsSnippet;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -141,12 +139,12 @@ public class LangControllerTest implements CrudAssertTrait {
     }
 
     @Override
-    public String idParameterName() {
-        return "lang";
+    public String urlWithId() {
+        return baseUrl() + "/{lang}";
     }
 
     @Override
-    public ResultActions doRequest(RequestBuilder request) throws Exception {
+    public ResultActions performRequest(RequestBuilder request) throws Exception {
         return mockMvc.perform(request);
     }
 
@@ -167,26 +165,22 @@ public class LangControllerTest implements CrudAssertTrait {
 
     @Test
     public void createShouldReturnAnValidationError() throws Exception {
-        String content = "{}";
+        String inputContent = "{}";
 
-        RequestBuilder request = buildJsonRequest(HttpMethod.POST, content);
-
-        assertValidationError(request, requiredLangField);
+        assertValidationError(post(inputContent), requiredLangField);
 
     }
 
     /**
-     * Test the happy path and generate snippets for lang create
+     * Test the happy path and generate snippets for lang post
      *
      */
     @Test
     public void createShouldReturnJsonWithAllFieldsSet() throws Exception {
         given(langRepository.create(prePersistLang)).willReturn(persistedLang);
 
-        RequestBuilder request = buildJsonRequest(HttpMethod.POST, prePersistLangJson);
-
-        assert20xWithEntry(request, HttpStatus.CREATED, persistedLang)
-                .andDo(document("create",
+        assert20xWithEntry(post(prePersistLangJson), HttpStatus.CREATED, persistedLang)
+                .andDo(document("post",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
                         interactionLinks,
@@ -205,9 +199,7 @@ public class LangControllerTest implements CrudAssertTrait {
 
         given(langRepository.create(prePersistLang)).willThrow(new DuplicateKeyException(expectedMsg));
 
-        RequestBuilder request = buildJsonRequest(HttpMethod.POST, prePersistLangJson);
-
-        assertError(request, HttpStatus.CONFLICT);
+        assertError(post(prePersistLangJson), HttpStatus.CONFLICT);
 
         verify(langRepository).create(prePersistLang);
     }
@@ -221,9 +213,7 @@ public class LangControllerTest implements CrudAssertTrait {
 
         given(langRepository.get(inputLang)).willReturn(Optional.of(updateLang));
 
-        RequestBuilder request = buildRequestWithId(HttpMethod.GET, inputLang);
-
-        assert20xWithEntry(request, HttpStatus.OK, updateLang)
+        assert20xWithEntry(get(inputLang), HttpStatus.OK, updateLang)
                 .andDo(document("get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -248,9 +238,7 @@ public class LangControllerTest implements CrudAssertTrait {
 
         given(langRepository.get(inputLang)).willReturn(Optional.empty());
 
-        RequestBuilder request = buildRequestWithId(HttpMethod.GET, inputLang);
-
-        assertError(request, HttpStatus.NOT_FOUND)
+        assertError(get(inputLang), HttpStatus.NOT_FOUND)
                 .andExpect(jsonPath("$.detail", equalTo(expectedMessage)));
 
         verify(langRepository).get(inputLang);
@@ -265,9 +253,7 @@ public class LangControllerTest implements CrudAssertTrait {
 
         doNothing().when(langRepository).delete(inputLang);
 
-        RequestBuilder request = buildRequestWithId(HttpMethod.DELETE, inputLang);
-
-        doRequest(request)
+        performRequest(delete(inputLang))
             .andExpect(status().is(HttpStatus.OK.value()))
             .andExpect(content().string(""))
             .andDo(document("delete",
@@ -287,62 +273,54 @@ public class LangControllerTest implements CrudAssertTrait {
 
         doThrow(new DataRetrievalFailureException("Some error text")).when(langRepository).delete(inputLang);
 
-        RequestBuilder request = buildRequestWithId(HttpMethod.DELETE, inputLang);
-
-        assertError(request, HttpStatus.BAD_REQUEST);
+        assertError(delete(inputLang), HttpStatus.BAD_REQUEST);
 
         verify(langRepository).delete(inputLang);
     }
 
     @Test
     public void updateShouldReturnValidationErrorWithEmptyContent() throws Exception {
-        String content = "{}";
+        String inputContent = "{}";
+        String inputLang = "ENG";
 
-        RequestBuilder request = buildRequestWithId(HttpMethod.PUT, "ENG")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(content);
-
-        assertValidationError(request, requiredLangField);
+        assertValidationError(put(inputLang, inputContent), requiredLangField);
     }
-
 
     @Test
     public void updateShouldFailWithDifferentPathAndEntityId() throws Exception {
         String inputLang = "DEU";
+        String inputContent = prePersistLangJson;
+
         String expectedMessage = messages.getMessage("error.url.parameter.mismatch", inputLang, prePersistLang.getLang());
 
-        RequestBuilder request = buildRequestWithId(HttpMethod.PUT, inputLang)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(prePersistLangJson);
-
-        assertError(request, HttpStatus.BAD_REQUEST)
+        assertError(put(inputLang, inputContent), HttpStatus.BAD_REQUEST)
                 .andExpect(jsonPath("$.detail", equalTo(expectedMessage)));
     }
 
     @Test
     public void updateShouldFailIfNotFound() throws Exception {
+        String inputLang = preUpdateLang.getLang();
+        String inputContent = objectMapper.writeValueAsString(preUpdateLang);
+
         given(langRepository.update(preUpdateLang)).willThrow(new DataRetrievalFailureException("Some error text"));
 
-        RequestBuilder request = buildRequestWithId(HttpMethod.PUT, preUpdateLang.getLang())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(preUpdateLang));
-
-        assertError(request, HttpStatus.BAD_REQUEST);
+        assertError(put(inputLang, inputContent), HttpStatus.BAD_REQUEST);
 
         verify(langRepository).update(preUpdateLang);
     }
 
+    /**
+     * Test the happy path and generate snippets for lang put
+     */
     @Test
     public void updateShouldSuccess() throws Exception {
+        String inputLang = preUpdateLang.getLang();
+        String inputContent = objectMapper.writeValueAsString(preUpdateLang);
+
         given(langRepository.update(preUpdateLang)).willReturn(updateLang);
 
-        RequestBuilder request = buildRequestWithId(HttpMethod.PUT, preUpdateLang.getLang())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(preUpdateLang));
-
-
-        assert20xWithEntry(request, HttpStatus.OK, updateLang)
-                .andDo(document("update",
+        assert20xWithEntry(put(inputLang, inputContent), HttpStatus.OK, updateLang)
+                .andDo(document("put",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
                         interactionLinks,
@@ -350,8 +328,8 @@ public class LangControllerTest implements CrudAssertTrait {
                             parameterWithName("lang").description("The language")
                         ),
                         createResponseFields.and(
-                            fieldWithPath("updatedBy").description("Last update user"),
-                            fieldWithPath("updated").description("Last update timestamp")
+                            fieldWithPath("updatedBy").description("Last put user"),
+                            fieldWithPath("updated").description("Last put timestamp")
                         )
                 ));
 

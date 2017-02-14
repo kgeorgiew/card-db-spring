@@ -33,7 +33,7 @@ public class RestControllerTest implements CrudAssertTrait {
     private MockMvc mockMvc;
 
     @Override
-    public ResultActions doRequest(RequestBuilder request) throws Exception {
+    public ResultActions performRequest(RequestBuilder request) throws Exception {
         return mockMvc.perform(request);
     }
 
@@ -42,13 +42,16 @@ public class RestControllerTest implements CrudAssertTrait {
         return TestController.baseUrl;
     }
 
+    @Override
+    public String urlWithId() {
+        return TestController.idUrl;
+    }
+
     @Test
     public void postWithInvalidJsonShouldFail() throws Exception {
-        String content = "";
+        String inputContent = "";
 
-        RequestBuilder request = buildJsonRequest(HttpMethod.POST, content);
-
-        assertError(request, HttpStatus.BAD_REQUEST);
+        assertError(post(inputContent), HttpStatus.BAD_REQUEST);
     }
 
     @Test
@@ -61,12 +64,14 @@ public class RestControllerTest implements CrudAssertTrait {
 
     @Test
     public void getWithWrongPathVariableTypeShouldFail() throws Exception {
-        RequestBuilder request = buildRequestWithId(HttpMethod.GET, "wrongIdType")
+        String inputId = "wrongIdType";
+        RequestBuilder request = buildRequestWithId(HttpMethod.GET, inputId)
                 .contentType(MediaType.TEXT_PLAIN_VALUE);
 
+        String expectedMessage = "Failed to convert value of type 'java.lang.String' to " +
+                "required type 'java.lang.Integer'; nested exception is java.lang.NumberFormatException: For input string: \"wrongIdType\"";
         assertError(request, HttpStatus.BAD_REQUEST)
-                .andExpect(jsonPath("$.detail",
-                        equalTo("Failed to convert value of type 'java.lang.String' to required type 'java.lang.Integer'; nested exception is java.lang.NumberFormatException: For input string: \"wrongIdType\"")));
+                .andExpect(jsonPath("$.detail", equalTo(expectedMessage)));
     }
 
     @RestController
