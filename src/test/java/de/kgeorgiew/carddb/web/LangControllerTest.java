@@ -238,8 +238,7 @@ public class LangControllerTest implements CrudAssertTrait {
 
         given(langRepository.get(inputLang)).willReturn(Optional.empty());
 
-        assertError(get(inputLang), HttpStatus.NOT_FOUND)
-                .andExpect(jsonPath("$.detail", equalTo(expectedMessage)));
+        assertError(get(inputLang), HttpStatus.NOT_FOUND, expectedMessage);
 
         verify(langRepository).get(inputLang);
     }
@@ -293,8 +292,7 @@ public class LangControllerTest implements CrudAssertTrait {
 
         String expectedMessage = messages.getMessage("error.url.parameter.mismatch", inputLang, prePersistLang.getLang());
 
-        assertError(put(inputLang, inputContent), HttpStatus.BAD_REQUEST)
-                .andExpect(jsonPath("$.detail", equalTo(expectedMessage)));
+        assertError(put(inputLang, inputContent), HttpStatus.BAD_REQUEST, expectedMessage);
     }
 
     @Test

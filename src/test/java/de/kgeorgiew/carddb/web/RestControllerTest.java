@@ -70,8 +70,7 @@ public class RestControllerTest implements CrudAssertTrait {
 
         String expectedMessage = "Failed to convert value of type 'java.lang.String' to " +
                 "required type 'java.lang.Integer'; nested exception is java.lang.NumberFormatException: For input string: \"wrongIdType\"";
-        assertError(request, HttpStatus.BAD_REQUEST)
-                .andExpect(jsonPath("$.detail", equalTo(expectedMessage)));
+        assertError(request, HttpStatus.BAD_REQUEST, expectedMessage);
     }
 
     @RestController

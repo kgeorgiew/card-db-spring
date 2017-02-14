@@ -21,6 +21,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public interface CrudAssertTrait {
 
     default ResultActions assertError(RequestBuilder request,
+                                      HttpStatus status, String message) throws Exception {
+        return assertError(request, status)
+                .andExpect(jsonPath("$.detail", equalTo(message)));
+    }
+    default ResultActions assertError(RequestBuilder request,
                                       HttpStatus status) throws Exception {
         String errorContentType = org.zalando.problem.spring.web.advice.MediaTypes.PROBLEM_VALUE;
         return performRequest(request)
