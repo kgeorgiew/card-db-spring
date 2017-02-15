@@ -1,9 +1,7 @@
 package de.kgeorgiew.carddb.json;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import de.kgeorgiew.carddb.service.SystemTimeService;
+import de.kgeorgiew.carddb.service.time.FixedTimeService;
+import de.kgeorgiew.carddb.service.time.TimeService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -12,7 +10,6 @@ import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.StringReader;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 
@@ -40,16 +37,9 @@ public class JacksonDateTest {
     private LocalDateTime fixedLocalDateTime;
     private ZonedDateTime fixedZonedDateTime;
 
-    private ObjectMapper objectMapper;
-
     @Before
     public void setUp() {
-//        objectMapper = new ObjectMapper();
-//        objectMapper.registerModule(new JavaTimeModule());
-//        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-
-        Clock fixedClock = Clock.fixed(Instant.ofEpochMilli(1234567890), ZoneId.systemDefault());
-        SystemTimeService fixedTimeService = new SystemTimeService(fixedClock);
+        TimeService fixedTimeService = new FixedTimeService();
         fixedLocalDateTime = fixedTimeService.asLocalDateTime();
         fixedZonedDateTime = fixedTimeService.asZonedDateTime();
     }

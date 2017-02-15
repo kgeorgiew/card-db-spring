@@ -1,12 +1,13 @@
-package de.kgeorgiew.carddb.web;
+package de.kgeorgiew.carddb.web.lang;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kgeorgiew.carddb.ConstrainedFields;
 import de.kgeorgiew.carddb.domain.Lang;
+import de.kgeorgiew.carddb.service.time.FixedTimeService;
 import de.kgeorgiew.carddb.service.LangRepository;
 import de.kgeorgiew.carddb.service.MessagesService;
-import de.kgeorgiew.carddb.service.SystemTimeService;
+import de.kgeorgiew.carddb.web.LangController;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,29 +22,22 @@ import org.springframework.restdocs.hypermedia.LinksSnippet;
 import org.springframework.restdocs.payload.ResponseFieldsSnippet;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.ResultActions;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
+import static de.kgeorgiew.carddb.HalRestAsserts.*;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.*;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
-import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
-import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
-import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.request;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.*;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -52,7 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @WebMvcTest(LangController.class)
 @AutoConfigureRestDocs("target/generated-snippets/lang")
-public class LangControllerTest implements CrudAssertTrait {
+public class LangControllerTest {
 //
 //    @Rule
 //    public JUnitRestDocumentation restDocumentation =
@@ -65,12 +59,16 @@ public class LangControllerTest implements CrudAssertTrait {
     private MessagesService messages;
 
     @Autowired
-    private MockMvc mockMvc;
+    private MockMvc mvc;
 
     @Autowired
     private ObjectMapper objectMapper;
 
-    private String requiredLangField = "lang.lang";
+    private final String baseUrl = "/api/v1/lang";
+    private final String urlWithId = baseUrl + "/{lang}";
+
+    private final String requiredLangField = "lang.lang";
+
     private String prePersistLangJson;
 
     private Lang prePersistLang;
@@ -93,7 +91,6 @@ public class LangControllerTest implements CrudAssertTrait {
             fieldWithPath("_links").description("<<resources-lang-links,Links>> to other resources")
     );
 
-
     @Before
     public void setUp() {
 //        langRepository = mock(LangRepository.class);
@@ -112,14 +109,14 @@ public class LangControllerTest implements CrudAssertTrait {
 //                new Jackson2HalModule.HalHandlerInstantiator(new EvoInflectorRelProvider(), appConfig.curieProvider(), null));
 //        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 //
-//        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+//        mvc = MockMvcBuilders.standaloneSetup(controller)
 //                .apply(documentationConfiguration(this.restDocumentation))
 //                .setControllerAdvice(new ControllerExceptionHandler())
 //                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
 //                .build();
 
-        Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
-        ZonedDateTime fixedDateTime = new SystemTimeService(fixedClock).asZonedDateTime();
+
+        ZonedDateTime fixedDateTime = new FixedTimeService().asZonedDateTime();
 
         this.prePersistLangJson = "{ \"lang\": \"ENG\" }";
         this.prePersistLang = new Lang("ENG", null, null);
@@ -131,21 +128,6 @@ public class LangControllerTest implements CrudAssertTrait {
                 preUpdateLang.getCreated(),
                 "updater",
                 ZonedDateTime.now());
-    }
-
-    @Override
-    public String baseUrl() {
-        return "/api/v1/lang";
-    }
-
-    @Override
-    public String urlWithId() {
-        return baseUrl() + "/{lang}";
-    }
-
-    @Override
-    public ResultActions performRequest(RequestBuilder request) throws Exception {
-        return mockMvc.perform(request);
     }
 
 //    @Test
@@ -167,7 +149,9 @@ public class LangControllerTest implements CrudAssertTrait {
     public void createShouldReturnAnValidationError() throws Exception {
         String inputContent = "{}";
 
-        assertValidationError(post(inputContent), requiredLangField);
+        ResultActions result = mvc.perform(jsonRequest(post(baseUrl), inputContent));
+
+        assertValidationError(result, requiredLangField);
 
     }
 
@@ -179,7 +163,9 @@ public class LangControllerTest implements CrudAssertTrait {
     public void createShouldReturnJsonWithAllFieldsSet() throws Exception {
         given(langRepository.create(prePersistLang)).willReturn(persistedLang);
 
-        assert20xWithEntry(post(prePersistLangJson), HttpStatus.CREATED, persistedLang)
+        ResultActions result = mvc.perform(jsonRequest(post(baseUrl), prePersistLangJson));
+
+        assert20xWithEntry(result, HttpStatus.CREATED, persistedLang)
                 .andDo(document("post",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -199,7 +185,9 @@ public class LangControllerTest implements CrudAssertTrait {
 
         given(langRepository.create(prePersistLang)).willThrow(new DuplicateKeyException(expectedMsg));
 
-        assertError(post(prePersistLangJson), HttpStatus.CONFLICT);
+        ResultActions result = mvc.perform(jsonRequest(post(baseUrl), prePersistLangJson));
+
+        assertError(result, HttpStatus.CONFLICT);
 
         verify(langRepository).create(prePersistLang);
     }
@@ -213,7 +201,9 @@ public class LangControllerTest implements CrudAssertTrait {
 
         given(langRepository.get(inputLang)).willReturn(Optional.of(updateLang));
 
-        assert20xWithEntry(get(inputLang), HttpStatus.OK, updateLang)
+        ResultActions result = mvc.perform(jsonRequest(get(urlWithId, inputLang)));
+
+        assert20xWithEntry(result, HttpStatus.OK, updateLang)
                 .andDo(document("get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -238,7 +228,9 @@ public class LangControllerTest implements CrudAssertTrait {
 
         given(langRepository.get(inputLang)).willReturn(Optional.empty());
 
-        assertError(get(inputLang), HttpStatus.NOT_FOUND, expectedMessage);
+        ResultActions result = mvc.perform(jsonRequest(get(urlWithId, inputLang)));
+
+        assertError(result, HttpStatus.NOT_FOUND, expectedMessage);
 
         verify(langRepository).get(inputLang);
     }
@@ -252,7 +244,7 @@ public class LangControllerTest implements CrudAssertTrait {
 
         doNothing().when(langRepository).delete(inputLang);
 
-        performRequest(delete(inputLang))
+        mvc.perform(jsonRequest(delete(urlWithId, inputLang)))
             .andExpect(status().is(HttpStatus.OK.value()))
             .andExpect(content().string(""))
             .andDo(document("delete",
@@ -272,7 +264,9 @@ public class LangControllerTest implements CrudAssertTrait {
 
         doThrow(new DataRetrievalFailureException("Some error text")).when(langRepository).delete(inputLang);
 
-        assertError(delete(inputLang), HttpStatus.BAD_REQUEST);
+        ResultActions result = mvc.perform(jsonRequest(delete(urlWithId, inputLang)));
+
+        assertError(result, HttpStatus.BAD_REQUEST);
 
         verify(langRepository).delete(inputLang);
     }
@@ -282,8 +276,12 @@ public class LangControllerTest implements CrudAssertTrait {
         String inputContent = "{}";
         String inputLang = "ENG";
 
-        assertValidationError(put(inputLang, inputContent), requiredLangField);
+        ResultActions result = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
+
+        assertValidationError(result, requiredLangField);
     }
+
+
 
     @Test
     public void updateShouldFailWithDifferentPathAndEntityId() throws Exception {
@@ -292,7 +290,9 @@ public class LangControllerTest implements CrudAssertTrait {
 
         String expectedMessage = messages.getMessage("error.url.parameter.mismatch", inputLang, prePersistLang.getLang());
 
-        assertError(put(inputLang, inputContent), HttpStatus.BAD_REQUEST, expectedMessage);
+        ResultActions result = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
+
+        assertError(result, HttpStatus.BAD_REQUEST, expectedMessage);
     }
 
     @Test
@@ -302,7 +302,9 @@ public class LangControllerTest implements CrudAssertTrait {
 
         given(langRepository.update(preUpdateLang)).willThrow(new DataRetrievalFailureException("Some error text"));
 
-        assertError(put(inputLang, inputContent), HttpStatus.BAD_REQUEST);
+        ResultActions result = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
+
+        assertError(result, HttpStatus.BAD_REQUEST);
 
         verify(langRepository).update(preUpdateLang);
     }
@@ -317,7 +319,9 @@ public class LangControllerTest implements CrudAssertTrait {
 
         given(langRepository.update(preUpdateLang)).willReturn(updateLang);
 
-        assert20xWithEntry(put(inputLang, inputContent), HttpStatus.OK, updateLang)
+        ResultActions result = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
+
+        assert20xWithEntry(result, HttpStatus.OK, updateLang)
                 .andDo(document("put",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -334,8 +338,8 @@ public class LangControllerTest implements CrudAssertTrait {
         verify(langRepository).update(preUpdateLang);
     }
 
-    private ResultActions assert20xWithEntry(RequestBuilder request, HttpStatus status, Lang expectedResult) throws Exception {
-        return assertSuccess(request, status)
+    private ResultActions assert20xWithEntry(ResultActions actions, HttpStatus status, Lang expectedResult) throws Exception {
+        return assertSuccess(actions, status)
                 .andExpect(jsonPath("$.lang", equalTo(expectedResult.getLang())))
                 .andExpect(jsonPath("$.created", equalTo(getAsString(expectedResult.getCreated()))))
                 .andExpect(jsonPath("$.createdBy", equalTo(expectedResult.getCreatedBy())));
@@ -344,5 +348,8 @@ public class LangControllerTest implements CrudAssertTrait {
     private String getAsString(ZonedDateTime dateTime) throws JsonProcessingException {
         return objectMapper.writeValueAsString(dateTime).replaceAll("\"", "");
     }
+
+//
+
 
 }

@@ -1,23 +1,13 @@
-package de.kgeorgiew.carddb.service;
+package de.kgeorgiew.carddb.service.time;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+import java.time.*;
 
 /**
  * @author kgeorgiew
  */
+public class FixedTimeService implements TimeService {
 
-@Service
-@RequiredArgsConstructor
-public class SystemTimeService {
-
-    private final @NonNull Clock clock;
+    private final Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 
     public long asMillis() {
         return clock.millis();
