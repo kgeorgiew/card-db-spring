@@ -51,7 +51,7 @@ public class JacksonDateTest {
         ZonedDateTime actual = zonedDateTimeConverter.parseObject("\"" + zonedDateTime + "\"");
         ZonedDateTime expected = fixedZonedDateTime.withZoneSameInstant(ZoneId.of("UTC"));
 
-        assertThat(actual, is(equalTo(expected)));
+        assertThat(actual, equalTo(expected));
     }
 
     @Test
@@ -59,7 +59,7 @@ public class JacksonDateTest {
         String actual = zonedDateTimeConverter.write(fixedZonedDateTime).getJson();
         String expected = fixedZonedDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
-        assertThat(actual, is(equalTo("\"" + expected + "\"")));
+        assertThat(actual, equalTo("\"" + expected + "\""));
     }
 
     @Test
@@ -69,7 +69,7 @@ public class JacksonDateTest {
         LocalDateTime actual = localDateTimeConverter.parseObject("\"" + localDateTime + "\"");
         LocalDateTime expected = fixedLocalDateTime;
 
-        assertThat(actual, is(equalTo(expected)));
+        assertThat(actual, equalTo(expected));
     }
 
     @Test
@@ -77,7 +77,7 @@ public class JacksonDateTest {
         String actual = localDateTimeConverter.write(fixedLocalDateTime).getJson();
         String expected = fixedLocalDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
-        assertThat(actual, is(equalTo("\"" + expected + "\"")));
+        assertThat(actual, equalTo("\"" + expected + "\""));
     }
 
     // TODO Test deserialization format with 'Z'

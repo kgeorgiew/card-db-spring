@@ -29,31 +29,29 @@ public class LangValidationTest {
 
     @Test
     public void shouldRejectFieldValueThan3Chars() throws Exception {
-        String fieldValue = "";
+        String actualValue = "";
+        String expectedError = "length must be exact 3";
 
-        String expectedMessage = "length must be exact 3";
-
-        assertInvalid(expectedMessage, fieldValue);
+        assertInvalid(actualValue, expectedError);
     }
 
     @Test
     public void shouldRejectFieldValueLongerThan3Chars() throws Exception {
-        String fieldValue = "Im too long";
+        String actualValue = "Im too long";
+        String expectedError = "length must be exact 3";
 
-        String expectedMessage = "length must be exact 3";
-
-        assertInvalid(expectedMessage, fieldValue);
+        assertInvalid(actualValue, expectedError);
     }
 
     @Test
     public void shouldRejectNullFieldValue() throws Exception {
-        String fieldValue = null;
-        String expectedMessage = "may not be null";
+        String actualValue = null;
+        String expectedError = "may not be null";
 
-        assertInvalid(expectedMessage, fieldValue);
+        assertInvalid(actualValue, expectedError);
     }
 
-    private void assertInvalid(String expectedMessage, String fieldValue) {
+    private void assertInvalid(String fieldValue, String expectedMessage) {
         Lang inputValue = new Lang(fieldValue, "admin", ZonedDateTime.now());
 
         Set<ConstraintViolation<Lang>> validations = validator.validate(inputValue);

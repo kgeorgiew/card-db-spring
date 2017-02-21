@@ -12,8 +12,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.bind.annotation.*;
 
-import static de.kgeorgiew.carddb.HalRestAsserts.assertError;
-import static de.kgeorgiew.carddb.HalRestAsserts.jsonRequest;
+import static de.kgeorgiew.carddb.HalRestAsserts.assertJsonError;
+import static de.kgeorgiew.carddb.RestRequestUtil.jsonRequest;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 
@@ -30,31 +30,32 @@ public class RestControllerTest {
     private MockMvc mvc;
 
     @Test
-    public void postWithInvalidJsonShouldFail() throws Exception {
-        String inputContent = "";
+    public void postWithEmptyStringShouldFail() throws Exception {
+        ResultActions actualResponse = mvc.perform(jsonRequest(post(TestController.baseUrl), ""));
 
-        ResultActions result = mvc.perform(jsonRequest(post(TestController.baseUrl), inputContent));
+        HttpStatus expectedStatus = HttpStatus.BAD_REQUEST;
 
-        assertError(result, HttpStatus.BAD_REQUEST);
+        assertJsonError(actualResponse, expectedStatus);
     }
 
     @Test
     public void postWithWrongContentTypeShouldFail() throws Exception {
-        ResultActions result = mvc.perform(jsonRequest(post(TestController.baseUrl))
+        ResultActions actualResponse = mvc.perform(jsonRequest(post(TestController.baseUrl))
                 .contentType(MediaType.TEXT_PLAIN_VALUE));
 
-        assertError(result, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        HttpStatus expectedStatus = HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+
+        assertJsonError(actualResponse, expectedStatus);
     }
 
     @Test
     public void getWithWrongPathVariableTypeShouldFail() throws Exception {
-        String inputId = "wrongIdType";
-        ResultActions result = mvc.perform(jsonRequest(get(TestController.idUrl, inputId))
+        ResultActions actualResponse = mvc.perform(jsonRequest(get(TestController.idUrl, "wrongIdType"))
                 .contentType(MediaType.TEXT_PLAIN_VALUE));
 
-        String expectedMessage = "Failed to convert value of type 'java.lang.String' to " +
-                "required type 'java.lang.Integer'; nested exception is java.lang.NumberFormatException: For input string: \"wrongIdType\"";
-        assertError(result, HttpStatus.BAD_REQUEST, expectedMessage);
+        HttpStatus expectedStatus = HttpStatus.BAD_REQUEST;
+
+        assertJsonError(actualResponse, expectedStatus);
     }
 
 

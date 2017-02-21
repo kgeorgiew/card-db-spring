@@ -19,6 +19,7 @@ import java.time.ZonedDateTime;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode(of = {"lang"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Builder
 public class Lang {
 
     @NotNull

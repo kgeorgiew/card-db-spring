@@ -1,13 +1,12 @@
-package de.kgeorgiew.carddb.web.lang;
+package de.kgeorgiew.carddb.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kgeorgiew.carddb.ConstrainedFields;
 import de.kgeorgiew.carddb.domain.Lang;
-import de.kgeorgiew.carddb.service.time.FixedTimeService;
 import de.kgeorgiew.carddb.service.LangRepository;
 import de.kgeorgiew.carddb.service.MessagesService;
-import de.kgeorgiew.carddb.web.LangController;
+import de.kgeorgiew.carddb.service.time.FixedTimeService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,6 +27,7 @@ import java.time.ZonedDateTime;
 import java.util.Optional;
 
 import static de.kgeorgiew.carddb.HalRestAsserts.*;
+import static de.kgeorgiew.carddb.RestRequestUtil.jsonRequest;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -67,7 +67,7 @@ public class LangControllerTest {
     private final String baseUrl = "/api/v1/lang";
     private final String urlWithId = baseUrl + "/{lang}";
 
-    private final String requiredLangField = "lang.lang";
+    private final String expectedErrorField = "lang.lang";
 
     private String prePersistLangJson;
 
@@ -142,17 +142,16 @@ public class LangControllerTest {
 //                .content(content);
 //
 //
-//        assertError(request, HttpStatus.BAD_REQUEST);
+//        assertJsonError(request, HttpStatus.BAD_REQUEST);
 //    }
 
     @Test
-    public void createShouldReturnAnValidationError() throws Exception {
+    public void createShouldReturn400OnValidationError() throws Exception {
         String inputContent = "{}";
 
-        ResultActions result = mvc.perform(jsonRequest(post(baseUrl), inputContent));
+        ResultActions actualResponse = mvc.perform(jsonRequest(post(baseUrl), inputContent));
 
-        assertValidationError(result, requiredLangField);
-
+        assertJsonValidationError(actualResponse, expectedErrorField);
     }
 
     /**
@@ -163,31 +162,34 @@ public class LangControllerTest {
     public void createShouldReturnJsonWithAllFieldsSet() throws Exception {
         given(langRepository.create(prePersistLang)).willReturn(persistedLang);
 
-        ResultActions result = mvc.perform(jsonRequest(post(baseUrl), prePersistLangJson));
+        ResultActions actualResponse = mvc.perform(jsonRequest(post(baseUrl), prePersistLangJson));
+        HttpStatus expectedStatus = HttpStatus.CREATED;
 
-        assert20xWithEntry(result, HttpStatus.CREATED, persistedLang)
-                .andDo(document("post",
-                        preprocessRequest(prettyPrint()),
-                        preprocessResponse(prettyPrint()),
-                        interactionLinks,
-                        requestFields(
-                                new ConstrainedFields(Lang.class).withPath("lang").description("The language")
-                        ),
-                        createResponseFields
-                ));
+        assertJsonResponse(actualResponse, expectedStatus);
+        assertExpectedContent(actualResponse, persistedLang);
+
+        doDocs(actualResponse,
+                "post",
+                interactionLinks,
+                requestFields(
+                        new ConstrainedFields(Lang.class).withPath("lang").description("The language")
+                ),
+                createResponseFields
+        );
 
         verify(langRepository).create(prePersistLang);
     }
 
     @Test
-    public void createShouldFailOnDuplicateEntry() throws Exception {
+    public void createShouldReturn409OnDuplicateEntry() throws Exception {
         String expectedMsg = "Entry already exists";
 
         given(langRepository.create(prePersistLang)).willThrow(new DuplicateKeyException(expectedMsg));
 
-        ResultActions result = mvc.perform(jsonRequest(post(baseUrl), prePersistLangJson));
+        ResultActions actualResponse = mvc.perform(jsonRequest(post(baseUrl), prePersistLangJson));
+        HttpStatus expectedStatus = HttpStatus.CONFLICT;
 
-        assertError(result, HttpStatus.CONFLICT);
+        assertJsonError(actualResponse, expectedStatus, expectedMsg);
 
         verify(langRepository).create(prePersistLang);
     }
@@ -201,10 +203,13 @@ public class LangControllerTest {
 
         given(langRepository.get(inputLang)).willReturn(Optional.of(updateLang));
 
-        ResultActions result = mvc.perform(jsonRequest(get(urlWithId, inputLang)));
+        ResultActions actualResponse = mvc.perform(jsonRequest(get(urlWithId, inputLang)));
+        HttpStatus expectedStatus = HttpStatus.OK;
 
-        assert20xWithEntry(result, HttpStatus.OK, updateLang)
-                .andDo(document("get",
+        assertJsonResponse(actualResponse, expectedStatus);
+        assertExpectedContent(actualResponse, updateLang);
+
+        actualResponse.andDo(document("get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
                         interactionLinks,
@@ -222,15 +227,16 @@ public class LangControllerTest {
     }
 
     @Test
-    public void getShouldReturnNotFound() throws Exception {
+    public void getShouldReturn404OnUnknownId() throws Exception {
         String inputLang = prePersistLang.getLang();
         String expectedMessage = messages.getMessage("error.entity.notFound", inputLang);
 
         given(langRepository.get(inputLang)).willReturn(Optional.empty());
 
-        ResultActions result = mvc.perform(jsonRequest(get(urlWithId, inputLang)));
+        ResultActions actualResponse = mvc.perform(jsonRequest(get(urlWithId, inputLang)));
+        HttpStatus expectedStatus = HttpStatus.NOT_FOUND;
 
-        assertError(result, HttpStatus.NOT_FOUND, expectedMessage);
+        assertJsonError(actualResponse, expectedStatus, expectedMessage);
 
         verify(langRepository).get(inputLang);
     }
@@ -239,72 +245,77 @@ public class LangControllerTest {
      * Test the happy path and generate snippets for lang delete
      */
     @Test
-    public void deleteShouldReturnSuccessResponse() throws Exception {
+    public void deleteShouldReturnEmpty200OnSuccess() throws Exception {
         String inputLang = persistedLang.getLang();
 
         doNothing().when(langRepository).delete(inputLang);
 
-        mvc.perform(jsonRequest(delete(urlWithId, inputLang)))
-            .andExpect(status().is(HttpStatus.OK.value()))
-            .andExpect(content().string(""))
-            .andDo(document("delete",
-                    preprocessRequest(prettyPrint()),
-                    preprocessResponse(prettyPrint()),
-                    pathParameters(
-                            parameterWithName("lang").description("The language")
-                    )
-            ));
+        ResultActions actualResponse = mvc.perform(jsonRequest(delete(urlWithId, inputLang)));
+        HttpStatus expectedStatus = HttpStatus.OK;
+        String expectedContent = "";
+
+        actualResponse
+            .andExpect(status().is(expectedStatus.value()))
+            .andExpect(content().string(expectedContent));
+
+        actualResponse.andDo(document("delete",
+                preprocessRequest(prettyPrint()),
+                preprocessResponse(prettyPrint()),
+                pathParameters(
+                        parameterWithName("lang").description("The language")
+                )
+        ));
 
         verify(langRepository).delete(inputLang);
     }
 
     @Test
-    public void deleteShouldFailIfNotFound() throws Exception {
+    public void deleteShouldReturn404IfNotFound() throws Exception {
         String inputLang = prePersistLang.getLang();
 
         doThrow(new DataRetrievalFailureException("Some error text")).when(langRepository).delete(inputLang);
 
-        ResultActions result = mvc.perform(jsonRequest(delete(urlWithId, inputLang)));
+        ResultActions actualResponse = mvc.perform(jsonRequest(delete(urlWithId, inputLang)));
+        HttpStatus expectedStatus = HttpStatus.NOT_FOUND;
 
-        assertError(result, HttpStatus.BAD_REQUEST);
+        assertJsonError(actualResponse, expectedStatus);
 
         verify(langRepository).delete(inputLang);
     }
 
     @Test
-    public void updateShouldReturnValidationErrorWithEmptyContent() throws Exception {
+    public void updateShouldReturnValidationError() throws Exception {
         String inputContent = "{}";
         String inputLang = "ENG";
 
-        ResultActions result = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
+        ResultActions actualResponse = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
 
-        assertValidationError(result, requiredLangField);
+        assertJsonValidationError(actualResponse, expectedErrorField);
     }
 
-
-
     @Test
-    public void updateShouldFailWithDifferentPathAndEntityId() throws Exception {
+    public void updateShouldReturn400WithDifferentPathAndEntityId() throws Exception {
         String inputLang = "DEU";
         String inputContent = prePersistLangJson;
 
+        ResultActions actualResponse = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
+        HttpStatus expectedStatus = HttpStatus.BAD_REQUEST;
         String expectedMessage = messages.getMessage("error.url.parameter.mismatch", inputLang, prePersistLang.getLang());
 
-        ResultActions result = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
-
-        assertError(result, HttpStatus.BAD_REQUEST, expectedMessage);
+        assertJsonError(actualResponse, expectedStatus, expectedMessage);
     }
 
     @Test
-    public void updateShouldFailIfNotFound() throws Exception {
+    public void updateShouldReturn404IfNotFound() throws Exception {
         String inputLang = preUpdateLang.getLang();
         String inputContent = objectMapper.writeValueAsString(preUpdateLang);
 
         given(langRepository.update(preUpdateLang)).willThrow(new DataRetrievalFailureException("Some error text"));
 
-        ResultActions result = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
+        ResultActions actualResponse = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
+        HttpStatus expectedStatus = HttpStatus.BAD_REQUEST;
 
-        assertError(result, HttpStatus.BAD_REQUEST);
+        assertJsonError(actualResponse, expectedStatus);
 
         verify(langRepository).update(preUpdateLang);
     }
@@ -319,37 +330,37 @@ public class LangControllerTest {
 
         given(langRepository.update(preUpdateLang)).willReturn(updateLang);
 
-        ResultActions result = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
+        ResultActions actualResponse = mvc.perform(jsonRequest(put(urlWithId, inputLang), inputContent));
+        HttpStatus expectedStatus = HttpStatus.OK;
 
-        assert20xWithEntry(result, HttpStatus.OK, updateLang)
-                .andDo(document("put",
-                        preprocessRequest(prettyPrint()),
-                        preprocessResponse(prettyPrint()),
-                        interactionLinks,
-                        pathParameters(
-                            parameterWithName("lang").description("The language")
-                        ),
-                        createResponseFields.and(
-                            fieldWithPath("updatedBy").description("Last put user"),
-                            fieldWithPath("updated").description("Last put timestamp")
-                        )
-                ));
+        assertJsonResponse(actualResponse, expectedStatus);
+        assertExpectedContent(actualResponse, updateLang);
+
+        actualResponse.andDo(document("put",
+                preprocessRequest(prettyPrint()),
+                preprocessResponse(prettyPrint()),
+                interactionLinks,
+                pathParameters(
+                        parameterWithName("lang").description("The language")
+                ),
+                createResponseFields.and(
+                        fieldWithPath("updatedBy").description("Last put user"),
+                        fieldWithPath("updated").description("Last put timestamp")
+                )
+        ));
 
         verify(langRepository).update(preUpdateLang);
     }
 
-    private ResultActions assert20xWithEntry(ResultActions actions, HttpStatus status, Lang expectedResult) throws Exception {
-        return assertSuccess(actions, status)
-                .andExpect(jsonPath("$.lang", equalTo(expectedResult.getLang())))
-                .andExpect(jsonPath("$.created", equalTo(getAsString(expectedResult.getCreated()))))
-                .andExpect(jsonPath("$.createdBy", equalTo(expectedResult.getCreatedBy())));
+    private ResultActions assertExpectedContent(ResultActions actions, Lang expectedEntry) throws Exception {
+        return actions
+                .andExpect(jsonPath("$.lang", equalTo(expectedEntry.getLang())))
+                .andExpect(jsonPath("$.created", equalTo(getAsString(expectedEntry.getCreated()))))
+                .andExpect(jsonPath("$.createdBy", equalTo(expectedEntry.getCreatedBy())));
     }
 
     private String getAsString(ZonedDateTime dateTime) throws JsonProcessingException {
         return objectMapper.writeValueAsString(dateTime).replaceAll("\"", "");
     }
-
-//
-
 
 }

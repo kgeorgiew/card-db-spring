@@ -9,6 +9,7 @@ import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -29,10 +30,8 @@ public class JacksonConfigurationTest {
     public void shouldIgnoreUnknownFields() throws Exception {
         String langJson = "{ \"lang\": \"ENG\", \"unknownField\": \"test\" }";
 
-        Lang lang = langConverter.parseObject(langJson);
+        Lang result = langConverter.parseObject(langJson);
 
-        assertThat(lang.getLang(), equalTo("ENG"));
-        assertThat(lang.getCreated(), is(nullValue()));
-        assertThat(lang.getCreatedBy(), is(nullValue()));
+        assertThat(result, is(notNullValue()));
     }
 }

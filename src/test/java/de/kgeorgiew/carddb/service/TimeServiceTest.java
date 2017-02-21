@@ -17,7 +17,6 @@ import static org.junit.Assert.assertTrue;
  */
 public class TimeServiceTest {
 
-
     @Test
     public void shouldReturnSystemTime() throws Exception {
         Clock systemClock = Clock.systemDefaultZone();
