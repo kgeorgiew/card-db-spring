@@ -14,7 +14,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.1.RELEASE</version>
+        <version>1.5.2.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -31,7 +31,7 @@
         <springhateoas.version>0.23.0.RELEASE</springhateoas.version>
         <springrestdocs.version>1.1.2.RELEASE</springrestdocs.version>
         <asciidoctor.version>1.5.3</asciidoctor.version>
-        <problemweb.version>0.17.0</problemweb.version>
+        <problemweb.version>0.18.0</problemweb.version>
         <restassured.version>3.0.2</restassured.version>
 
         <snippetsDirectory>${project.build.directory}/generated-snippets</snippetsDirectory>
@@ -47,6 +47,11 @@
             <groupId>org.springframework.hateoas</groupId>
             <artifactId>spring-hateoas</artifactId>
             <version>${springhateoas.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-commons</artifactId>
         </dependency>
 
         <dependency>

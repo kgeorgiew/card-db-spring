@@ -1,6 +1,7 @@
 package de.kgeorgiew.carddb.exception.handler;
 
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -30,4 +31,5 @@ public interface DatabaseExceptionHandler extends AdviceTrait {
             final NativeWebRequest request) {
         return create(Response.Status.CONFLICT, exception, request);
     }
+
 }

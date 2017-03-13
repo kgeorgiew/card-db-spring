@@ -18,7 +18,7 @@ public class HalRestAsserts {
 
     private static final String errorContentType = org.zalando.problem.spring.web.advice.MediaTypes.PROBLEM_VALUE;
 
-    public static ResultActions assertJsonResponse(ResultActions actualResponse, HttpStatus expectedStatus) throws Exception {
+    public static ResultActions assertJsonResponseType(ResultActions actualResponse, HttpStatus expectedStatus) throws Exception {
         Assert.assertThat(expectedStatus, either(equalTo(HttpStatus.OK)).or(equalTo(HttpStatus.CREATED)));
 
         return actualResponse
@@ -43,12 +43,12 @@ public class HalRestAsserts {
                 .andExpect(jsonPath("$.violations[0].message").isNotEmpty());
     }
 
-    public static ResultActions assertJsonError(ResultActions actualResponse, HttpStatus exptectedStatus, String expectedErrorMsg) throws Exception {
-        return assertJsonError(actualResponse, exptectedStatus)
+    public static ResultActions assertJsonErrorContent(ResultActions actualResponse, HttpStatus exptectedStatus, String expectedErrorMsg) throws Exception {
+        return assertJsonErrorContent(actualResponse, exptectedStatus)
                 .andExpect(jsonPath("$.detail", equalTo(expectedErrorMsg)));
     }
 
-    public static ResultActions assertJsonError(ResultActions actualResponse, HttpStatus expectedStatus) throws Exception {
+    public static ResultActions assertJsonErrorContent(ResultActions actualResponse, HttpStatus expectedStatus) throws Exception {
         return actualResponse
                 .andExpect(content().contentTypeCompatibleWith(errorContentType))
                 .andExpect(status().is(expectedStatus.value()))

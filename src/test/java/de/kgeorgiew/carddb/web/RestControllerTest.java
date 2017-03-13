@@ -1,5 +1,6 @@
 package de.kgeorgiew.carddb.web;
 
+import de.kgeorgiew.carddb.HalRestAsserts;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +13,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.bind.annotation.*;
 
-import static de.kgeorgiew.carddb.HalRestAsserts.assertJsonError;
-import static de.kgeorgiew.carddb.RestRequestUtil.jsonRequest;
+import static de.kgeorgiew.carddb.RestRequestUtil.addAcceptJson;
+import static de.kgeorgiew.carddb.RestRequestUtil.addJsonContent;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 
@@ -31,31 +32,31 @@ public class RestControllerTest {
 
     @Test
     public void postWithEmptyStringShouldFail() throws Exception {
-        ResultActions actualResponse = mvc.perform(jsonRequest(post(TestController.baseUrl), ""));
+        ResultActions actualResponse = mvc.perform(addJsonContent(post(TestController.baseUrl), ""));
 
         HttpStatus expectedStatus = HttpStatus.BAD_REQUEST;
 
-        assertJsonError(actualResponse, expectedStatus);
+        HalRestAsserts.assertJsonErrorContent(actualResponse, expectedStatus);
     }
 
     @Test
     public void postWithWrongContentTypeShouldFail() throws Exception {
-        ResultActions actualResponse = mvc.perform(jsonRequest(post(TestController.baseUrl))
+        ResultActions actualResponse = mvc.perform(addAcceptJson(post(TestController.baseUrl))
                 .contentType(MediaType.TEXT_PLAIN_VALUE));
 
         HttpStatus expectedStatus = HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
-        assertJsonError(actualResponse, expectedStatus);
+        HalRestAsserts.assertJsonErrorContent(actualResponse, expectedStatus);
     }
 
     @Test
     public void getWithWrongPathVariableTypeShouldFail() throws Exception {
-        ResultActions actualResponse = mvc.perform(jsonRequest(get(TestController.idUrl, "wrongIdType"))
+        ResultActions actualResponse = mvc.perform(addAcceptJson(get(TestController.idUrl, "wrongIdType"))
                 .contentType(MediaType.TEXT_PLAIN_VALUE));
 
         HttpStatus expectedStatus = HttpStatus.BAD_REQUEST;
 
-        assertJsonError(actualResponse, expectedStatus);
+        HalRestAsserts.assertJsonErrorContent(actualResponse, expectedStatus);
     }
 
 

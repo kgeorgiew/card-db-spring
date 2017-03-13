@@ -8,7 +8,11 @@ import de.kgeorgiew.carddb.service.LangResourceAssembler;
 import de.kgeorgiew.carddb.service.MessagesService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.PagedResources;
 import org.springframework.hateoas.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,10 +36,13 @@ public class LangController {
     private final @NonNull LangResourceAssembler resourceAssembler;
     private final @NonNull MessagesService messages;
 
-    @RequestMapping(method = RequestMethod.POST)
-    public ResponseEntity<Resource<Lang>> create(@Valid @RequestBody Lang entity) {
-        Lang result = repository.create(entity);
-        return new ResponseEntity<>(resourceAssembler.toResource(result), HttpStatus.CREATED);
+    @RequestMapping(method = RequestMethod.GET)
+    public ResponseEntity<PagedResources<Resource<Lang>>> list(Pageable pageable,
+            PagedResourcesAssembler<Lang> pagedAssembler) {
+
+        Page<Lang> page = repository.list(pageable);
+
+        return new ResponseEntity<>(pagedAssembler.toResource(page, resourceAssembler), HttpStatus.OK);
     }
 
     @RequestMapping(value = "{lang}", method = RequestMethod.GET)
@@ -46,6 +53,12 @@ public class LangController {
             ).orElseThrow(() ->
                 new ResourceNotFoundException(messages.getMessage("error.entity.notFound", lang))
             );
+    }
+
+    @RequestMapping(method = RequestMethod.POST)
+    public ResponseEntity<Resource<Lang>> create(@Valid @RequestBody Lang entity) {
+        Lang result = repository.create(entity);
+        return new ResponseEntity<>(resourceAssembler.toResource(result), HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "{lang}", method = RequestMethod.DELETE)

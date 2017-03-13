@@ -2,6 +2,7 @@ package de.kgeorgiew.carddb.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
+import org.springframework.hateoas.core.Relation;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -22,6 +23,9 @@ import java.time.ZonedDateTime;
 @Builder
 public class Lang {
 
+    /**
+     * Language code in ISO 639-3
+     */
     @NotNull
     @Size(min=3, max = 3, message = "{Size.Min.Lang.lang}")
     private String lang;
